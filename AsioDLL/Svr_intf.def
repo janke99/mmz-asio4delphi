@@ -1,0 +1,19 @@
+; Svr_intf.def : Declares the module parameters for the DLL.
+
+LIBRARY      "Svr_intf"
+
+EXPORTS
+     Asio_init
+     Asio_Uninit
+     Asio_SvrRun
+     Asio_SetCallback 
+     Asio_senddata
+     Asio_closesocket     
+     Asio_Client_init
+     Asio_Client_conntosvr
+     Asio_Client_DisConn
+     Asio_Client_Free
+     Asio_Client_senddata
+     Asio_Client_readdata
+     Asio_Client_Asreaddata
+     
