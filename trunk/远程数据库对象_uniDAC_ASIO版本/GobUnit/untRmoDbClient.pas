@@ -3,7 +3,7 @@
         创建日期：2008-09-16 17:25:52
         创建者	  马敏钊
         功能:     远程数据库客户端
-        当前版本： v2.1
+        当前版本： v2.0.2
 
 更新历史
 v1.0  单元实现
@@ -17,6 +17,10 @@ v1.7  增加服务端sys.ini文件配置客户端登陆权限，增加批量执行SQL语句接口
 v1.8  增加服务端提供自动升级功能，可以升级多个文件或者目录，可选择强制升级或者客户端可选升级
 v2.0  增加asio高性能 C++ 完成端口稳定库的封装支持
 v2.1  增加存储过程调用的支持（参考静水流深的修改版本，在此表示感谢）
+v2.0.2 2011-04-20
+                  统一和服务端的版本号 ，从v2.1修改为v2.0.2
+                  由于MAX()方式获取数据记录当数据表内存在大量记录时会很慢，而且可能导致ID冲突，
+                  所以特，增加快速获取自增长ID的方式，客户端可配置是否使用这种方式
 *******************************************************}
 
 
@@ -51,8 +55,9 @@ type
 
     procedure OnBeginPost(DataSet: TDataSet);
     procedure OnBeforeDelete(DataSet: TDataSet);
+    function GetSvrmaxID(Iidname, itablename: string): integer;
   public
-
+    IsSpeedGetID: Boolean; //是否使用高速方式获取自增长ID
     IsInserIDfield: boolean; //是否插入语句 支持ID字段 自增长不允许插入该字段默认是false
     FLastInsertID: Integer; //insert语句时返回插入记录的自增字段的值
 
@@ -406,6 +411,38 @@ end;
 var
   lglst: Tstrings;
 
+function TRmoClient.GetSvrmaxID(Iidname, itablename: string): integer;
+var
+  llen, i: Integer;
+  ISql: string;
+begin
+  if IsSpeedGetID then begin
+    ISql := Format('%s|%s', [Iidname, itablename]);
+    llen := Length(ISql);
+    SendAsioHead(8 + llen);
+    WriteInteger(7);
+    WriteInteger(llen);
+    Write(ISql);
+    llen := ReadInteger();
+    Result := ReadInteger;
+    if llen = -1 then begin
+      llen := ReadInteger();
+      ISql := ReadStr(llen);
+      raise Exception.Create(ISql);
+    end;
+  end
+  else begin
+                  //如果需要ID字段 自动获取
+    if FQryForID = nil then
+      FQryForID := TClientDataSet.Create(nil);
+//    获取ID
+    OpenAndataSet(Format('select max(%s) as myid from %s', [Iidname, itablename]), FQryForID);
+//
+    Result := FQryForID.FieldByName('myid').AsInteger + 1;
+  end;
+end;
+
+
 procedure TRmoClient.OnBeforeDelete(DataSet: TDataSet);
 var
   I: Integer;
@@ -494,8 +531,14 @@ begin
             IsInserIDfield := True;
             Fields[0].ReadOnly := False;
           end;
+          if DataSet.State = dsInsert then begin
+//------------------------------------------------------------------------------
+// 更换为通过服务端获取ID  2011-4-20 10:46:02   马敏钊
+//------------------------------------------------------------------------------
+            DataSet.Fields[0].AsInteger := GetSvrmaxID(DataSet.Fields[0].FieldName, FtableName);
+          end;
           if IsInserIDfield then begin
-            n := 1;
+            n := 0;
           end
           else
             n := 1;
@@ -571,13 +614,6 @@ begin
       end;
   end; // case
   ExeSQl(Result);
-  if DataSet.State = dsInsert then begin
-  //如果需要ID字段 自动获取
-    if FQryForID = nil then
-      FQryForID := TClientDataSet.Create(nil);
-    OpenAndataSet(Format('select max(%s) as myid from %s', [DataSet.Fields[0].FieldName, FtableName]), FQryForID);
-    DataSet.Fields[0].AsInteger := FQryForID.FieldByName('myid').AsInteger;
-  end;
   //如果有blob字段则 追加写入
   if LblobStream <> nil then begin
     lsql := format('update %s set %s=:%s where %s=%d', [FtableName, lBobName, 'Pbob'
@@ -611,6 +647,7 @@ end;
 procedure TRmoClient.OnCreate;
 begin
   inherited;
+  IsSpeedGetID := True;
   FCachSQllst := THashedStringList.Create;
   Ftimer := TTimer.Create(nil);
   Ftimer.OnTimer := OnCheck;
