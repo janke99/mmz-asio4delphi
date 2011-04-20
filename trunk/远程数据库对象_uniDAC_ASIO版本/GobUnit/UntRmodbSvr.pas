@@ -256,6 +256,58 @@ begin
             Flock.Leave;
           end;
         end;
+      1010: {//执行存储过程} begin //执行一条SQL语句 更新或者执行
+          Flock.Enter;
+          try
+            Llen := ClientThread.Socket.ReadInteger;
+            LSQl := ClientThread.Socket.ReadStr(Llen);
+
+            DataModel.UniProc.SQL.Clear;
+            DataModel.UniProc.SQL.Add(lsql);
+
+            if not DataModel.Coner.InTransaction then begin
+              DataModel.Coner.StartTransaction;
+              if Shower <> nil then begin
+                Shower.AddShow('%s启动事务', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
+              //Shower.AddShow('%s执行<%s>', [sClient,LSQl]);
+                Shower.AddShow('%s更新语句', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
+              end;
+              try
+                DataModel.UniProc.ExecSQL;
+                DataModel.Coner.Commit;
+                ClientThread.Socket.WriteInteger(1);
+              //向客户端返回output参数值
+              { TODO -owshx -c :  2010-11-10 下午 02:26:32 }
+              {with DataModel.UniProc1 do
+              begin
+                if ParamCount > 0 then
+                for i := 0 to ParamCount -1 do
+                begin
+                  tmp := tmp + '####' +
+                        Params.Items[i].Name + ':'
+                        + VarToStrDef(Params.Items[i],'NoValue';
+                end;
+                System.delete(tmp,1,4);
+                ClientThread.Socket.WriteInteger(Length(tmp));
+                ClientThread.Socket.Write(tmp);
+              end;}
+              //if Shower <> nil then Shower.AddShow('客户端提交事务成功');
+              except
+                on e: Exception do begin
+                  ClientThread.Socket.WriteInteger(-1);
+                  ClientThread.Socket.WriteInteger(Length(e.Message));
+                  ClientThread.Socket.Write(e.Message);
+                  DataModel.Coner.Rollback;
+                  if Shower <> nil then
+                    Shower.AddShow('事务回滚，%s执行语句异常<%s>', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort), e.Message]);
+                end;
+              end;
+            end;
+
+          finally
+            Flock.Leave;
+          end;
+        end;
       1011: {//执行存储过程 并返回结果集} begin
           Flock.Enter;
           try
