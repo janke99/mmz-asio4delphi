@@ -14,6 +14,7 @@ uses classes, untASIOSvr;
 
 type
   //客户端对象
+
   TSocketClient = class(TAsioClient)
   private
   public

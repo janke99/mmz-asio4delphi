@@ -3,7 +3,7 @@
         创建日期：2008-09-16 17:26:15
         创建者	  马敏钊
         功能:     远程数据库服务端
-        当前版本：v2.0.1
+        当前版本：v2.0.2
         历史：
         v2.0.0 2011-04-18
                    对ASIO进行高效率的封装，
@@ -11,6 +11,9 @@
         v2.0.1 2011-04-19
                   增加存储过程调用的支持（参考静水流深发布的修改版本）
                   在此对静水流深标示感谢
+        v2.0.2 2011-04-20
+                  由于MAX()方式获取数据记录当数据表内存在大量记录时会很慢，而且可能导致ID冲突，
+                  所以特，增加快速获取自增长ID的方式，客户端可配置是否使用这种方式
 *******************************************************}
 
 unit UntRmodbSvr;
@@ -23,6 +26,11 @@ uses Classes, UntSocketServer, UntTBaseSocketServer, untFunctions, syncobjs, Win
 
 
 type
+  Tider = class
+  public
+    Tablename: string;
+    Id: Integer;
+  end;
   TRmodbSvr = class(TCenterServer)
   private
     Flock: TCriticalSection;
@@ -32,6 +40,8 @@ type
     gLastCpTime: Cardinal;
     gLmemStream: TMemoryStream;
     glBatchLst: TStrings;
+    Fidlst: TStrings;
+    gider: Tider;
     //连接到数据库
     function ConnToDb(IConnStr: ansistring): boolean;
     function OnCheckLogin(ClientThread: TAsioClient): boolean; override;
@@ -102,6 +112,7 @@ procedure TRmodbSvr.OnCreate(ISocket: TBaseSocketServer);
 begin
   inherited;
   Flock := TCriticalSection.Create;
+  Fidlst := TStringList.Create;
   gLmemStream := TMemoryStream.Create;
   gLastCpTime := 0;
   glBatchLst := TStringList.Create;
@@ -447,6 +458,53 @@ begin
             Flock.Leave;
           end;
         end;
+      7: begin //自动增长ID
+          //维护一个ID列表 ，每次获取自增长ID由服务端来做唯一
+          Flock.Enter;
+          try
+            Llen := ClientThread.Socket.ReadInteger;
+            LSQl := ClientThread.Socket.ReadStr(Llen);
+            if Shower <> nil then
+              Shower.AddShow('客户端<%s>查询ID<%s>', [ClientThread.PeerIP, LSQl]);
+            Llen := Fidlst.IndexOf(LowerCase(copy(LSQl, pos('|', LSQl) + 1, length(LSQl))));
+            try
+              if Llen = -1 then begin
+                gider := Tider.Create;
+                gider.Tablename := LowerCase(copy(LSQl, pos('|', LSQl) + 1, length(LSQl)));
+                DataModel.Gqry.Close;
+                DataModel.Gqry.SQL.Clear;
+                DataModel.Gqry.SQL.Add(format('select max(%s) as maxid from %s', [copy(LSQl, 1, pos('|', LSQl) - 1), gider.Tablename]));
+                DataModel.Gqry.Open;
+                if (DataModel.Gqry.RecordCount = 0) then
+                  gider.Id := 1
+                else
+                  gider.Id := DataModel.Gqry.FieldByName('maxid').AsInteger + 1;
+                Fidlst.AddObject(gider.Tablename, gider);
+              end
+              else begin
+                gider := Tider(Fidlst.Objects[Llen]);
+                inc(gider.Id);
+              end;
+              Llen := gider.Id;
+              ClientThread.Socket.WriteInteger(1);
+              ClientThread.Socket.WriteInteger(Llen);
+            except
+              on e: Exception do begin
+                ClientThread.Socket.WriteInteger(-1);
+                ClientThread.Socket.WriteInteger(Length(e.Message));
+                ClientThread.Socket.Write(e.Message);
+                if Shower <> nil then
+                  Shower.AddShow('客户端获取ID异常<%s>', [e.Message]);
+                if e is EAccessViolation then begin
+                  if Shower <> nil then
+                    Shower.AddShow('发现数据库对象地址访问错误', [e.Message]);
+                end;
+              end;
+            end;
+          finally
+            Flock.Leave;
+          end;
+        end;
     end; //case
   except
     on e: Exception do
@@ -458,6 +516,7 @@ end;
 procedure TRmodbSvr.OnDestroy;
 begin
   inherited;
+  ClearAndFreeList(Fidlst);
   Flock.Free;
   glBatchLst.Free;
   gLmemStream.Free;

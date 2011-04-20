@@ -4,11 +4,15 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.0.0
+        当前版本：v1.0.1
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
                   同时封装高效的数据处理模型
+        v1.0.1 2011-04-20
+                  修正了客户端退出时有时报异常的BUG
+                  进过测试确定 在客户端发送大数据时不用手动分片发送
+                  修改write过程的发送实现
 ********************************************************************************}
 
 interface
@@ -896,35 +900,36 @@ var
   lp: PByte;
 begin
   //如果数据太大必须分片
-  if Ilen > 1024 then begin
-    Glen := Ilen;
-    Curr := 0;
-    lp := pbyte(Ibuffer);
-    lsend := 1024;
-    repeat
-      inc(Curr, lsend);
-      i := Asio_Client_senddata(Socketptr, lp, lsend);
-      if i = 0 then begin
-        Result := -1;
-        FisConning := false;
-      end
-      else begin
-        Inc(lp, lsend);
-        lsend := min(1024, Ilen - Curr);
-      end;
-      if Result = -1 then Break;
-    until Curr = Glen;
-    Result := Curr;
+//  if Ilen > 1024 then begin
+//    Glen := Ilen;
+//    Curr := 0;
+//    lp := pbyte(Ibuffer);
+//    lsend := 1024;
+//    repeat
+//      inc(Curr, lsend);
+//      i := Asio_Client_senddata(Socketptr, lp, lsend);
+//      if i = 0 then begin
+//        Result := -1;
+//        FisConning := false;
+//      end
+//      else begin
+//        Inc(lp, lsend);
+//        lsend := min(1024, Ilen - Curr);
+//      end;
+//      if Result = -1 then Break;
+//    until Curr = Glen;
+//    Result := Curr;
+//  end
+//  else begin
+    //进过测试确定 不用手动分片发送
+  i := Asio_Client_senddata(Socketptr, Ibuffer, Ilen);
+  if i = 0 then begin
+    Result := -1;
+    FisConning := false;
   end
-  else begin
-    i := Asio_Client_senddata(Socketptr, Ibuffer, Ilen);
-    if i = 0 then begin
-      Result := -1;
-      FisConning := false;
-    end
-    else
-      Result := i;
-  end;
+  else
+    Result := i;
+//  end;
 end;
 
 function TAsioClient.Write(Istr: AnsiString): Integer;
