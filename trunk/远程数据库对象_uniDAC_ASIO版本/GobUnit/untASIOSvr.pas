@@ -771,7 +771,9 @@ end;
 
 function TAsioClient.CloseConn: Boolean;
 begin
-  Result := Asio_Client_DisConn(Socketptr) = 1;
+  Result := false;
+  if Socketptr > 0 then
+    Result := Asio_Client_DisConn(Socketptr) = 1;
 end;
 
 function TAsioClient.ConnToSvr(Iip: ansistring; Iport: Word): Boolean;
@@ -1169,8 +1171,10 @@ end;
 initialization
 
 finalization
-  if GClientUserASIO <> nil then
+  if GClientUserASIO <> nil then begin
+    KillTask(ExtractFilePath(ParamStr(0)));
     GClientUserASIO.Free;
+  end;
 
 end.
 
