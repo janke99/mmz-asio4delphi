@@ -4,7 +4,8 @@ uses
   Forms,
   untMain in 'untMain.pas' {frm_main},
   UntRemSql in '..\GobUnit\UntRemSql.pas',
-  ViewGraph in 'ViewGraph.pas' {View_Graph};
+  ViewGraph in 'ViewGraph.pas' {View_Graph},
+  untASIOSvr in '..\..\untAsioSvr\untASIOSvr.pas';
 
 {$R *.res}
 

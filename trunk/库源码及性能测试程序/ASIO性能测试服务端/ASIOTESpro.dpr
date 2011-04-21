@@ -4,7 +4,7 @@ uses
   fastmm4,
   Forms,
   asioTest in 'asioTest.pas' {view_main},
-  untASIOSvr in 'untASIOSvr.pas';
+  untASIOSvr in '..\..\untAsioSvr\untASIOSvr.pas';
 
 {$R *.res}
 

@@ -6,7 +6,7 @@ uses
   modelASIOtest in 'modelASIOtest.pas' {ASIO_test},
   modelCommClient in 'modelCommClient.pas',
   UntsocketDxBaseClient in 'UntsocketDxBaseClient.pas',
-  untASIOSvr in '..\AsioDLL\Debug\untASIOSvr.pas';
+  untASIOSvr in '..\..\untAsioSvr\untASIOSvr.pas';
 
 {$R *.res}
 

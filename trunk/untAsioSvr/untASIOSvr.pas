@@ -4,11 +4,15 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.0.0
+        当前版本：v1.0.1
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
                   同时封装高效的数据处理模型
+        v1.0.1 2011-04-20
+                  修正了客户端退出时有时报异常的BUG
+                  进过测试确定 在客户端发送大数据时不用手动分片发送
+                  修改write过程的发送实现
 ********************************************************************************}
 
 interface
@@ -167,7 +171,7 @@ type
     function InitAsioClient: boolean;
 
     {连接服务端}
-    function ConnToSvr(Iip: string; Iport: Word): Boolean;
+    function ConnToSvr(Iip: ansistring; Iport: Word): Boolean;
     {阻塞方式发送数据}
     function Writeinteger(Iint: Integer; ITrans: boolean = true): Integer;
     function Write(Ibuffer: Pointer; Ilen: Integer): Integer; overload;
@@ -236,8 +240,6 @@ type
     //检测是否有要释放的对象
     procedure CheckDeadClients;
 
-    //发送数据
-    function SendData(Idata: Pointer; Ilen: integer): Boolean;
     //主动断开客户端连接
     function DisConn(IClient: TasioClient): boolean;
     constructor Create(WorkThreadCount: Integer = 1);
@@ -258,7 +260,7 @@ implementation
 
 
 
-uses IniFiles, SysUtils, Windows, WinSock, untfunctions;
+uses IniFiles, SysUtils, Windows, WinSock, untfunctions, Math;
 
 var
   GIntAsioTCP: TAsioSvr;
@@ -281,7 +283,7 @@ function Asio_Client_DisConn(Ipobj: integer): integer; cdecl; external Cdllname;
 
 //连接服务器
 
-function Asio_Client_conntosvr(Ipobj: integer; ISvr: PChar; iPort: integer; Iuserdata: integer): integer; cdecl; external Cdllname;
+function Asio_Client_conntosvr(Ipobj: integer; ISvr: pansichar; iPort: integer; Iuserdata: integer): integer; cdecl; external Cdllname;
 
 //释放对象
 
@@ -316,7 +318,7 @@ procedure Asio_senddata(ikind: Integer; Isocker: integer; Ibuff: Pointer; Ilen: 
 
 procedure Asio_closesocket(Isocker: integer); cdecl; external Cdllname;
 
-procedure Asio_ConnedCallback(Ipsocket: integer; IPeerIP: Pchar; IpeerPort:
+procedure Asio_ConnedCallback(Ipsocket: integer; IPeerIP: pansichar; IpeerPort:
   integer; var IUserData: integer; var IwantRead: integer); stdcall;
 var
   i: Integer;
@@ -478,7 +480,7 @@ end;
 
 function TAsioSvr.DisConn(IClient: TasioClient): boolean;
 begin
-
+  IClient.CloseConn;
 end;
 
 function TAsioSvr.GetClientMem: Int64;
@@ -499,11 +501,6 @@ begin
   for i := 0 to FClientLst.Count - 1 do begin
     Inc(Result, TAsioClient(FClientLst.Objects[i]).MemPool.GetTotSize);
   end;
-end;
-
-function TAsioSvr.SendData(Idata: Pointer; Ilen: integer): Boolean;
-begin
-
 end;
 
 function TAsioSvr.ShowBytes(Ibytes: Int64): string;
@@ -545,7 +542,10 @@ end;
 destructor TAsioDataBuffer.Destroy;
 begin
   try
-    Asio_closesocket(Parent.Socketptr);
+    if Parent.Socketptr > 0 then begin
+     // Asio_closesocket(Parent.Socketptr);
+      Parent.Socketptr := 0;
+    end;
   except
   end;
   FDataLock.Free;
@@ -608,10 +608,10 @@ function TAsioDataBuffer.ReadBuff(Ibuffer: Pointer; Ilen: integer; IrcvGob:
 begin
   Result := Ilen;
   if IrcvGob then begin
-    CopyMemory(@Gbuff[ReadPos], (PChar(Memory.Memory) + CurrPost), Ilen);
+    CopyMemory(@Gbuff[ReadPos], (pansichar(Memory.Memory) + CurrPost), Ilen);
     inc(ReadPos, Ilen);
   end;
-  CopyMemory(Ibuffer, (PChar(Memory.Memory) + CurrPost), Ilen);
+  CopyMemory(Ibuffer, (pansichar(Memory.Memory) + CurrPost), Ilen);
   Result := Ilen;
   inc(CurrPost, Ilen);
 end;
@@ -620,7 +620,7 @@ end;
 function TAsioDataBuffer.ReadInteger(IrcvGob: Boolean = false; ITrans: Boolean
   = True): Integer;
 begin
-  CopyMemory(@result, (PChar(Memory.Memory) + CurrPost), 4);
+  CopyMemory(@result, (pansichar(Memory.Memory) + CurrPost), 4);
   if ITrans then
     Result := ntohl(Result);
   if IrcvGob then begin
@@ -635,17 +635,17 @@ function TAsioDataBuffer.ReadStr(Ilen: integer; IrcvGob: Boolean = false):
 begin
   SetLength(Result, Ilen);
   if IrcvGob then begin
-    CopyMemory(@Gbuff[ReadPos], (PChar(Memory.Memory) + CurrPost), Ilen);
+    CopyMemory(@Gbuff[ReadPos], (pansichar(Memory.Memory) + CurrPost), Ilen);
     Inc(ReadPos, Ilen);
   end;
-  CopyMemory(@Result[1], (PChar(Memory.Memory) + CurrPost), Ilen);
+  CopyMemory(@Result[1], (pansichar(Memory.Memory) + CurrPost), Ilen);
   inc(CurrPost, Ilen);
 end;
 
 procedure TAsioDataBuffer.ReLoadData;
 var
   i: Integer;
-  lp, lfir: pchar;
+  lp, lfir: pansichar;
 
 begin
   //当数据超过一定量 重新装载数据 1/2M数据后重新刷新
@@ -775,14 +775,19 @@ end;
 
 function TAsioClient.CloseConn: Boolean;
 begin
-
+  Result := false;
+  if Socketptr > 0 then
+    Result := Asio_Client_DisConn(Socketptr) = 1;
 end;
 
-function TAsioClient.ConnToSvr(Iip: string; Iport: Word): Boolean;
+function TAsioClient.ConnToSvr(Iip: ansistring; Iport: Word): Boolean;
 begin
   if Socketptr = 0 then
     InitAsioClient;
-  Result := Asio_Client_Conntosvr(Socketptr, pchar(Iip), Iport, integer(self)) > 0;
+  RcvDataBuffer.Memory.Position := 0;
+  RcvDataBuffer.CurrPost := 0;
+  RcvDataBuffer.ReadPos := 0;
+  Result := Asio_Client_Conntosvr(Socketptr, pansichar(Iip), Iport, integer(self)) > 0;
   if Result then
     FisConning := True;
 end;
@@ -891,8 +896,32 @@ end;
 
 function TAsioClient.Write(Ibuffer: Pointer; Ilen: Integer): Integer;
 var
-  i: Integer;
+  i, Curr, lsend, Glen: Integer;
+  lp: PByte;
 begin
+  //如果数据太大必须分片
+//  if Ilen > 1024 then begin
+//    Glen := Ilen;
+//    Curr := 0;
+//    lp := pbyte(Ibuffer);
+//    lsend := 1024;
+//    repeat
+//      inc(Curr, lsend);
+//      i := Asio_Client_senddata(Socketptr, lp, lsend);
+//      if i = 0 then begin
+//        Result := -1;
+//        FisConning := false;
+//      end
+//      else begin
+//        Inc(lp, lsend);
+//        lsend := min(1024, Ilen - Curr);
+//      end;
+//      if Result = -1 then Break;
+//    until Curr = Glen;
+//    Result := Curr;
+//  end
+//  else begin
+    //进过测试确定 不用手动分片发送
   i := Asio_Client_senddata(Socketptr, Ibuffer, Ilen);
   if i = 0 then begin
     Result := -1;
@@ -900,6 +929,7 @@ begin
   end
   else
     Result := i;
+//  end;
 end;
 
 function TAsioClient.Write(Istr: AnsiString): Integer;
@@ -944,8 +974,8 @@ end;
 
 procedure TMainthread.Execute;
 begin
+  Asio_init(Parent.Fport);
   try
-    Asio_init(Parent.Fport);
     Asio_SvrRun;
   except
   end;
@@ -974,8 +1004,8 @@ end;
 constructor TMemPools.Create;
 begin
   FObjs := TStringList.Create;
-  FbmpLst := TStringList.Create;
-  FmemLst := TStringList.Create;
+//  FbmpLst := TStringList.Create;
+//  FmemLst := TStringList.Create;
 //  Flock := TCriticalSection.Create;
 end;
 
@@ -985,10 +1015,11 @@ var
 begin
   for i := FObjs.Count - 1 downto 0 do
     FObjs.Objects[i].Free;
+  FObjs.Free;
   //ClearAndFreeList(FObjs);
 //  Flock.Free;
-  FbmpLst.Free;
-  FmemLst.Free;
+//  FbmpLst.Free;
+//  FmemLst.Free;
   inherited;
 end;
 
@@ -1145,8 +1176,10 @@ end;
 initialization
 
 finalization
-  if GClientUserASIO <> nil then
+  if GClientUserASIO <> nil then begin
+    KillTask(ExtractFilePath(ParamStr(0)));
     GClientUserASIO.Free;
+  end;
 
 end.
 
