@@ -1177,7 +1177,7 @@ initialization
 
 finalization
   if GClientUserASIO <> nil then begin
-    KillTask(ExtractFilePath(ParamStr(0)));
+    KillTask(ExtractFileName(ParamStr(0)));
     GClientUserASIO.Free;
   end;
 
