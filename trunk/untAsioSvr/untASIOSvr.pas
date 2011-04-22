@@ -763,7 +763,7 @@ begin
         end;
       end;
       Inc(Lindex);
-    until Lindex + 1 >= Parent.GAsioTCP.FClientLst.Count;
+    until Lindex  >= Parent.GAsioTCP.FClientLst.Count;
     Lindex := 0;
     //检查一下 死亡的客户端
     Parent.GAsioTCP.CheckDeadClients;
