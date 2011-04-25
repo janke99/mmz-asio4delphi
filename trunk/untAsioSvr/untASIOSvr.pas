@@ -562,7 +562,10 @@ procedure TAsioDataBuffer.DoCase;
 begin
 //  FDataLock.Acquire;
 //  try
-  Parent.Parent.FOnCaseData(Parent, WantData);
+  try
+    Parent.Parent.FOnCaseData(Parent, WantData);
+  except
+  end;
 //  finally
 //    FDataLock.Release;
 //  end;
@@ -763,7 +766,7 @@ begin
         end;
       end;
       Inc(Lindex);
-    until Lindex  >= Parent.GAsioTCP.FClientLst.Count;
+    until Lindex >= Parent.GAsioTCP.FClientLst.Count;
     Lindex := 0;
     //检查一下 死亡的客户端
     Parent.GAsioTCP.CheckDeadClients;
