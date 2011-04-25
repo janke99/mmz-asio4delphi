@@ -3,7 +3,7 @@
         创建日期：2008-09-16 17:26:15
         创建者	  马敏钊
         功能:     远程数据库服务端
-        当前版本：v2.0.2
+        当前版本：v2.0.3
         历史：
         v2.0.0 2011-04-18
                    对ASIO进行高效率的封装，
@@ -14,6 +14,8 @@
         v2.0.2 2011-04-20
                   由于MAX()方式获取数据记录当数据表内存在大量记录时会很慢，而且可能导致ID冲突，
                   所以特，增加快速获取自增长ID的方式，客户端可配置是否使用这种方式
+        v2.0.3 2011-04-25
+                  根据群友Daniel建议 批量执行语句时添加事务安全
 *******************************************************}
 
 unit UntRmodbSvr;
@@ -362,11 +364,21 @@ begin
               Shower.AddShow('客户端批量执行语句', [LSQl]);
             try
               if glBatchLst.Count > 0 then begin
-                for Llen := 0 to glBatchLst.Count - 1 do begin // Iterate
-                  DataModel.UniSQL.SQL.Clear;
-                  DataModel.UniSQL.SQL.Add(glBatchLst[Llen]);
-                  DataModel.UniSQL.Execute;
-                end; // for
+//------------------------------------------------------------------------------
+// 根据群友Daniel建议 批量处理添加事务  2011-04-25 10:12:47   马敏钊
+//------------------------------------------------------------------------------   
+                DataModel.Coner.StartTransaction;
+                try
+                  for Llen := 0 to glBatchLst.Count - 1 do begin // Iterate
+                    DataModel.UniSQL.SQL.Clear;
+                    DataModel.UniSQL.SQL.Add(glBatchLst[Llen]);
+                    DataModel.UniSQL.Execute;
+                  end; // for
+                  DataModel.Coner.Commit;
+                except
+                  DataModel.Coner.Rollback;
+                  raise;
+                end;
               end;
               ClientThread.Socket.WriteInteger(1);
             except
