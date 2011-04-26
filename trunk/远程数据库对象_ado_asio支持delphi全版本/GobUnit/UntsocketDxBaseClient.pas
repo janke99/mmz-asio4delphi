@@ -14,7 +14,6 @@ uses classes, untASIOSvr;
 
 type
   //客户端对象
-
   TSocketClient = class(TAsioClient)
   private
   public
@@ -40,8 +39,7 @@ type
     function GetZipStream(IStream: TStream; IConn: TAsioClient): integer;
     function GetStream(IStream: TStream; IConn: TAsioClient): integer;
 
-    function SendZIpStream(IStream: tStream; IConn: TAsioClient;
-      IisEnc: boolean = false): Integer;
+    function SendZIpStream(IStream: tStream; IConn: TAsioClient): Integer;
     //连接
     function Connto(IIP: string; Iport: Word): boolean;
 
@@ -124,7 +122,7 @@ begin
   LBuff := LZipMM.Memory;
   x := 0;
   while ltot > 0 do begin
-    i := ReadBuffer(PansiChar(LBuff) + x, ltot);
+    i := ReadBuffer(PChar(LBuff) + x, ltot);
     Dec(ltot, i);
     inc(x, i);
   end; // while
@@ -146,7 +144,7 @@ begin
     LBuff := LZipMM.Memory;
     x := 0;
     while ltot > 0 do begin
-      i := ReadBuffer(PansiChar(LBuff) + x, ltot);
+      i := ReadBuffer(PChar(LBuff) + x, ltot);
       Dec(ltot, i);
       inc(x, i);
     end; // while
@@ -171,7 +169,7 @@ begin
   LBuff := LZipMM.Memory;
   x := 0;
   while ltot > 0 do begin
-    i := ReadBuffer(PansiChar(LBuff) + x, ltot);
+    i := ReadBuffer(PChar(LBuff) + x, ltot);
     Dec(ltot, i);
     inc(x, i);
   end; // while
@@ -218,11 +216,10 @@ begin
   end;
 end;
 
-function TSocketClient.SendZIpStream(IStream: tStream; IConn: TAsioClient;
-  IisEnc: boolean = false): Integer;
+function TSocketClient.SendZIpStream(IStream: tStream; IConn: TAsioClient):
+  Integer;
 begin
-  if IisEnc = false then
-    EnCompressStream(TMemoryStream(IStream));
+  EnCompressStream(TMemoryStream(IStream));
   IConn.WriteInteger(IStream.Size);
   IConn.Write(TMemoryStream(IStream).Memory, IStream.Size);
   Result := IStream.Size;

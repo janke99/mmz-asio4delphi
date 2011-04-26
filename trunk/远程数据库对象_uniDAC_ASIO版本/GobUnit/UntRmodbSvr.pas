@@ -1,31 +1,30 @@
-{*******************************************************
-        单元名称：UntRmodbSvr.pas
-        创建日期：2008-09-16 17:26:15
-        创建者	  马敏钊
-        功能:     远程数据库服务端
-        当前版本：v2.0.3
-        历史：
-        v2.0.0 2011-04-18
-                   对ASIO进行高效率的封装，
-                  同时封装高效的数据处理模型
-        v2.0.1 2011-04-19
-                  增加存储过程调用的支持（参考静水流深发布的修改版本）
-                  在此对静水流深标示感谢
-        v2.0.2 2011-04-20
-                  由于MAX()方式获取数据记录当数据表内存在大量记录时会很慢，而且可能导致ID冲突，
-                  所以特，增加快速获取自增长ID的方式，客户端可配置是否使用这种方式
-        v2.0.3 2011-04-25
-                  根据群友Daniel建议 批量执行语句时添加事务安全
-*******************************************************}
+{ *******************************************************
+  单元名称：UntRmodbSvr.pas
+  创建日期：2008-09-16 17:26:15
+  创建者	  马敏钊
+  功能:     远程数据库服务端
+  当前版本：v2.0.3
+  历史：
+  v2.0.0 2011-04-18
+  对ASIO进行高效率的封装，
+  同时封装高效的数据处理模型
+  v2.0.1 2011-04-19
+  增加存储过程调用的支持（参考静水流深发布的修改版本）
+  在此对静水流深标示感谢
+  v2.0.2 2011-04-20
+  由于MAX()方式获取数据记录当数据表内存在大量记录时会很慢，而且可能导致ID冲突，
+  所以特，增加快速获取自增长ID的方式，客户端可配置是否使用这种方式
+  v2.0.3 2011-04-25
+  根据群友Daniel建议 批量执行语句时添加事务安全
+  ******************************************************* }
 
 unit UntRmodbSvr;
 
-
 interface
 
-uses Classes, UntSocketServer, UntTBaseSocketServer, untFunctions, syncobjs, Windows, Forms,
+uses Classes, UntSocketServer, UntTBaseSocketServer, untFunctions, syncobjs,
+  Windows, Forms,
   DBClient, untASIOSvr;
-
 
 type
   Tider = class
@@ -33,10 +32,12 @@ type
     Tablename: string;
     Id: Integer;
   end;
+
   TRmodbSvr = class(TCenterServer)
   private
     Flock: TCriticalSection;
-    function ReadStream(Istream: TStream; ClientThread: TAsioClient): TMemoryStream;
+    function ReadStream(Istream: TStream; ClientThread: TAsioClient)
+      : TMemoryStream;
   public
     GGDBPath: ansistring;
     gLastCpTime: Cardinal;
@@ -44,16 +45,18 @@ type
     glBatchLst: TStrings;
     Fidlst: TStrings;
     gider: Tider;
-    //连接到数据库
+    // 连接到数据库
     function ConnToDb(IConnStr: ansistring): boolean;
     function OnCheckLogin(ClientThread: TAsioClient): boolean; override;
-    function OnDataCase(ClientThread: TAsioClient; Ihead: integer): Boolean;
-      override;
+    function OnDataCase(ClientThread: TAsioClient; Ihead: Integer)
+      : boolean; override;
     procedure OnCreate(ISocket: TBaseSocketServer); override;
     procedure OnDestroy; override;
     function GetCurrDBPath(InPath: ansistring): ansistring;
-    function DatasetFromStream(Idataset: TClientDataSet; Stream: TMemoryStream): boolean;
-    function DatasetToStream(iRecordset: TClientDataSet; Stream: TMemoryStream): boolean;
+    function DatasetFromStream(Idataset: TClientDataSet;
+      Stream: TMemoryStream): boolean;
+    function DatasetToStream(iRecordset: TClientDataSet;
+      Stream: TMemoryStream): boolean;
   end;
 
 var
@@ -65,8 +68,8 @@ uses sysUtils, pmybasedebug, db, DM, Variants, UntCFGer, IniFiles;
 
 { TRmoSvr }
 
-function TRmodbSvr.DatasetFromStream(Idataset: TClientDataSet; Stream:
-  TMemoryStream): boolean;
+function TRmodbSvr.DatasetFromStream(Idataset: TClientDataSet;
+  Stream: TMemoryStream): boolean;
 var
   RS: Variant;
 begin
@@ -75,15 +78,15 @@ begin
     Exit;
   try
     Stream.Position := 0;
-//    RS := Idataset.Recordset;
-    Rs.Open(TStreamAdapter.Create(Stream) as IUnknown);
+    // RS := Idataset.Recordset;
+    RS.Open(TStreamAdapter.Create(Stream) as IUnknown);
     Result := true;
   finally;
   end;
 end;
 
-function TRmodbSvr.DatasetToStream(iRecordset: TClientDataSet; Stream:
-  TMemoryStream): boolean;
+function TRmodbSvr.DatasetToStream(iRecordset: TClientDataSet;
+  Stream: TMemoryStream): boolean;
 const
   adPersistADTG = $00000000;
 var
@@ -93,8 +96,8 @@ begin
   if iRecordset = nil then
     Exit;
   try
-//    RS := iRecordset.Recordset;
-    RS.Save(TStreamAdapter.Create(stream) as IUnknown, adPersistADTG);
+    // RS := iRecordset.Recordset;
+    RS.Save(TStreamAdapter.Create(Stream) as IUnknown, adPersistADTG);
     Stream.Position := 0;
     Result := true;
   finally;
@@ -104,8 +107,9 @@ end;
 function TRmodbSvr.ConnToDb(IConnStr: ansistring): boolean;
 begin
 
-  Result := True;
-  if Shower <> nil then begin
+  Result := true;
+  if Shower <> nil then
+  begin
     Shower.AddShow('连接数据库功<%s>', [IConnStr]);
   end;
 end;
@@ -121,7 +125,8 @@ begin
 end;
 
 function StreamToVarArray(const S: TStream): Variant;
-var P: Pointer;
+var
+  P: Pointer;
   C: Integer;
   L: Integer;
 begin
@@ -129,8 +134,7 @@ begin
   C := S.Size;
   Result := VarArrayCreate([1, C], varByte);
   L := Length(Result);
-  if L <> 0 then
-    ;
+  if L <> 0 then;
   P := VarArrayLock(Result);
   try
     S.Read(P^, C);
@@ -140,7 +144,8 @@ begin
 end;
 
 procedure VarArrayToStream(const V: Variant; S: TStream);
-var P: Pointer;
+var
+  P: Pointer;
   C: Integer;
 begin
   if not VarIsArray(V) then
@@ -148,7 +153,7 @@ begin
   if VarType(V[1]) <> varByte then
     raise Exception.Create('Var array is not blob array');
   C := VarArrayHighBound(V, 1) - VarArrayLowBound(V, 1) + 1;
-  if not (C > 0) then
+  if not(C > 0) then
     Exit;
 
   P := VarArrayLock(V);
@@ -156,23 +161,28 @@ begin
     S.Write(P^, C * SizeOf(Byte));
     S.Position := 0;
   finally
-    VarArrayUnLock(V);
+    VarArrayUnlock(V);
   end;
 end;
 
 var
   lini: TIniFile;
 
-procedure MGetFileListToStr(var Resp: ansistring; ISpit: ansistring; iFilter, iPath:
-  ansistring; ContainSubDir: Boolean = True; INeedPath: boolean = True);
+procedure MGetFileListToStr(var Resp: ansistring; ISpit: ansistring;
+  iFilter, iPath: ansistring; ContainSubDir: boolean = true;
+  INeedPath: boolean = true);
 var
   FSearchRec, DSearchRec: TSearchRec;
   FindResult: Cardinal;
 begin
-  FindResult := FindFirst(iPath + iFilter, sysutils.faAnyFile, FSearchRec);
+  FindResult := FindFirst(iPath + iFilter, sysUtils.faAnyFile, FSearchRec);
   try
-    while FindResult = 0 do begin
-      if ((FSearchRec.Attr and faDirectory) = faDirectory) or (FSearchRec.Name = '.') or (FSearchRec.Name = '..') or (ExtractFileExt(FSearchRec.Name) = '.lnk') then begin
+    while FindResult = 0 do
+    begin
+      if ((FSearchRec.Attr and faDirectory) = faDirectory) or
+        (FSearchRec.Name = '.') or (FSearchRec.Name = '..') or
+        (ExtractFileExt(FSearchRec.Name) = '.lnk') then
+      begin
         FindResult := FindNext(FSearchRec);
         Continue;
       end;
@@ -183,12 +193,16 @@ begin
       Resp := Resp + ISpit;
       FindResult := FindNext(FSearchRec);
     end;
-    if ContainSubDir then begin
+    if ContainSubDir then
+    begin
       FindResult := FindFirst(iPath + iFilter, faDirectory, DSearchRec);
-      while FindResult = 0 do begin
-        if ((DSearchRec.Attr and faDirectory) = faDirectory)
-          and (DSearchRec.Name <> '.') and (DSearchRec.Name <> '..') then begin
-          MGetFileListToStr(Resp, ISpit, iFilter, iPath + DSearchRec.Name + '\', ContainSubDir);
+      while FindResult = 0 do
+      begin
+        if ((DSearchRec.Attr and faDirectory) = faDirectory) and
+          (DSearchRec.Name <> '.') and (DSearchRec.Name <> '..') then
+        begin
+          MGetFileListToStr(Resp, ISpit, iFilter, iPath + DSearchRec.Name + '\',
+            ContainSubDir);
         end;
         FindResult := FindNext(DSearchRec);
       end;
@@ -199,52 +213,63 @@ begin
   end;
 end;
 
-function TRmodbSvr.OnDataCase(ClientThread: TAsioClient; Ihead: integer):
-  Boolean;
+function TRmodbSvr.OnDataCase(ClientThread: TAsioClient;
+  Ihead: Integer): boolean;
 var
   i: Integer;
-  Llen: integer;
-  LSQl, ls: string;
+  Llen: Integer;
+  LSQl, ls,lp: ansistring;
 begin
-  Result := True;
+  Result := true;
   try
     case Ihead of //
-      9998: begin
-        //客户端查询升级信息
-          if FileExists(GetCurrPath() + 'update.ini') then begin
+      9998:
+        begin
+          // 客户端查询升级信息
+          if FileExists(GetCurrPath() + 'update.ini') then
+          begin
             if lini = nil then
               lini := TIniFile.Create(GetCurrPath + 'update.ini');
             ClientThread.Socket.WriteInteger(1);
-            ClientThread.Socket.WriteInteger(lini.ReadInteger('info', 'ver', 0));
+            ClientThread.Socket.WriteInteger(lini.ReadInteger('info',
+              'ver', 0));
             i := lini.ReadInteger('info', 'isfrce', 1);
             ClientThread.Socket.WriteInteger(i);
-            ClientThread.Socket.WriteInteger(length(GetCurrPath));
-            ClientThread.Socket.Write(GetCurrPath);
+            lp:=GetCurrPath;
+            Llen:=Length(lp);
+            ClientThread.Socket.WriteInteger(llen);
+            ClientThread.Socket.Write(lp);
             ls := lini.ReadString('info', 'hint', '无');
-            ClientThread.Socket.WriteInteger(length(ls));
+            ClientThread.Socket.WriteInteger(Length(ls));
             ClientThread.Socket.Write(ls);
             ls := '';
-            MGetFileListToStr(ls, '|', '*.*', GetCurrPath + lini.ReadString('info', 'filepath', 'update'), True);
-            ClientThread.Socket.WriteInteger(length(ls));
+            MGetFileListToStr(ls, '|', '*.*',
+              GetCurrPath + lini.ReadString('info', 'filepath',
+              'update'), true);
+            ClientThread.Socket.WriteInteger(Length(ls));
             ClientThread.Socket.Write(ls);
           end
           else
             ClientThread.Socket.WriteInteger(0);
         end;
-      9997: begin
+      9997:
+        begin
           Llen := ClientThread.Socket.ReadInteger;
           ls := ClientThread.Socket.ReadStr(Llen);
-          if FileExists(ls) then begin
+          if FileExists(ls) then
+          begin
             ClientThread.Socket.WriteInteger(1);
             Socket.SendZIpFile(ls, ClientThread);
           end
           else
             ClientThread.Socket.WriteInteger(0);
         end;
-      0: begin //断开连接
+      0:
+        begin // 断开连接
           ClientThread.Socket.Disconnect;
         end;
-      1: begin //执行一条SQL语句 更新或者执行
+      1:
+        begin // 执行一条SQL语句 更新或者执行
           Flock.Enter;
           try
             Llen := ClientThread.Socket.ReadInteger;
@@ -257,7 +282,8 @@ begin
               DataModel.UniSQL.Execute;
               ClientThread.Socket.WriteInteger(1);
             except
-              on e: Exception do begin
+              on e: Exception do
+              begin
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
@@ -269,50 +295,58 @@ begin
             Flock.Leave;
           end;
         end;
-      1010: {//执行存储过程} begin //执行一条SQL语句 更新或者执行
+      1010: { //执行存储过程 }
+        begin // 执行一条SQL语句 更新或者执行
           Flock.Enter;
           try
             Llen := ClientThread.Socket.ReadInteger;
             LSQl := ClientThread.Socket.ReadStr(Llen);
 
             DataModel.UniProc.SQL.Clear;
-            DataModel.UniProc.SQL.Add(lsql);
+            DataModel.UniProc.SQL.Add(LSQl);
 
-            if not DataModel.Coner.InTransaction then begin
+            if not DataModel.Coner.InTransaction then
+            begin
               DataModel.Coner.StartTransaction;
-              if Shower <> nil then begin
-                Shower.AddShow('%s启动事务', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
-              //Shower.AddShow('%s执行<%s>', [sClient,LSQl]);
-                Shower.AddShow('%s更新语句', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
+              if Shower <> nil then
+              begin
+                Shower.AddShow('%s启动事务',
+                  [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
+                // Shower.AddShow('%s执行<%s>', [sClient,LSQl]);
+                Shower.AddShow('%s更新语句',
+                  [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
               end;
               try
                 DataModel.UniProc.ExecSQL;
                 DataModel.Coner.Commit;
                 ClientThread.Socket.WriteInteger(1);
-              //向客户端返回output参数值
-              { TODO -owshx -c :  2010-11-10 下午 02:26:32 }
-              {with DataModel.UniProc1 do
-              begin
-                if ParamCount > 0 then
-                for i := 0 to ParamCount -1 do
-                begin
+                // 向客户端返回output参数值
+                { TODO -owshx -c :  2010-11-10 下午 02:26:32 }
+                { with DataModel.UniProc1 do
+                  begin
+                  if ParamCount > 0 then
+                  for i := 0 to ParamCount -1 do
+                  begin
                   tmp := tmp + '####' +
-                        Params.Items[i].Name + ':'
-                        + VarToStrDef(Params.Items[i],'NoValue';
-                end;
-                System.delete(tmp,1,4);
-                ClientThread.Socket.WriteInteger(Length(tmp));
-                ClientThread.Socket.Write(tmp);
-              end;}
-              //if Shower <> nil then Shower.AddShow('客户端提交事务成功');
+                  Params.Items[i].Name + ':'
+                  + VarToStrDef(Params.Items[i],'NoValue';
+                  end;
+                  System.delete(tmp,1,4);
+                  ClientThread.Socket.WriteInteger(Length(tmp));
+                  ClientThread.Socket.Write(tmp);
+                  end; }
+                // if Shower <> nil then Shower.AddShow('客户端提交事务成功');
               except
-                on e: Exception do begin
+                on e: Exception do
+                begin
                   ClientThread.Socket.WriteInteger(-1);
                   ClientThread.Socket.WriteInteger(Length(e.Message));
                   ClientThread.Socket.Write(e.Message);
                   DataModel.Coner.Rollback;
                   if Shower <> nil then
-                    Shower.AddShow('事务回滚，%s执行语句异常<%s>', [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort), e.Message]);
+                    Shower.AddShow('事务回滚，%s执行语句异常<%s>',
+                      [ClientThread.PeerIP + '' +
+                      IntToStr(ClientThread.PeerPort), e.Message]);
                 end;
               end;
             end;
@@ -321,14 +355,15 @@ begin
             Flock.Leave;
           end;
         end;
-      1011: {//执行存储过程 并返回结果集} begin
+      1011: { //执行存储过程 并返回结果集 }
+        begin
           Flock.Enter;
           try
             Llen := ClientThread.Socket.ReadInteger;
             LSQl := ClientThread.Socket.ReadStr(Llen);
 
             DataModel.UniProc.SQL.Clear;
-            DataModel.UniProc.SQL.Add(lsql);
+            DataModel.UniProc.SQL.Add(LSQl);
             try
               DataModel.UniProc.Open;
               if gLmemStream <> nil then
@@ -340,7 +375,8 @@ begin
                 Shower.AddShow('存储过程返回数据集，记录条数%s',
                   [IntToStr(DataModel.dpProc.DataSet.RecordCount)]);
             except
-              on e: Exception do begin
+              on e: Exception do
+              begin
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
@@ -353,7 +389,8 @@ begin
           end;
         end;
 
-      110: begin //批量执行语句
+      110:
+        begin // 批量执行语句
           Flock.Enter;
           try
             gLmemStream.Size := 0;
@@ -363,13 +400,15 @@ begin
             if Shower <> nil then
               Shower.AddShow('客户端批量执行语句', [LSQl]);
             try
-              if glBatchLst.Count > 0 then begin
-//------------------------------------------------------------------------------
-// 根据群友Daniel建议 批量处理添加事务  2011-04-25 10:12:47   马敏钊
-//------------------------------------------------------------------------------   
+              if glBatchLst.Count > 0 then
+              begin
+                // ------------------------------------------------------------------------------
+                // 根据群友Daniel建议 批量处理添加事务  2011-04-25 10:12:47   马敏钊
+                // ------------------------------------------------------------------------------
                 DataModel.Coner.StartTransaction;
                 try
-                  for Llen := 0 to glBatchLst.Count - 1 do begin // Iterate
+                  for Llen := 0 to glBatchLst.Count - 1 do
+                  begin // Iterate
                     DataModel.UniSQL.SQL.Clear;
                     DataModel.UniSQL.SQL.Add(glBatchLst[Llen]);
                     DataModel.UniSQL.Execute;
@@ -382,8 +421,9 @@ begin
               end;
               ClientThread.Socket.WriteInteger(1);
             except
-              on e: Exception do begin
-//                glBatchLst.SaveToFile('D:\1.txt');
+              on e: Exception do
+              begin
+                // glBatchLst.SaveToFile('D:\1.txt');
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
@@ -395,14 +435,15 @@ begin
             Flock.Leave;
           end;
         end;
-      2: begin //执行一个查询语句
+      2:
+        begin // 执行一个查询语句
           Flock.Enter;
           try
             gLmemStream.Size := 0;
             Llen := ClientThread.Socket.ReadInteger;
             LSQl := ClientThread.Socket.ReadStr(Llen);
             try
-//              ls := GetCurrPath + GetDocDate + GetDocTime;
+              // ls := GetCurrPath + GetDocDate + GetDocTime;
               if Shower <> nil then
                 Shower.AddShow('客户端执行查询语句<%s>', [LSQl]);
               DataModel.Gqry.Close;
@@ -413,7 +454,8 @@ begin
               ClientThread.Socket.WriteInteger(1);
               Socket.SendZIpStream(gLmemStream, ClientThread);
             except
-              on e: Exception do begin
+              on e: Exception do
+              begin
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
@@ -425,16 +467,22 @@ begin
             Flock.Leave;
           end;
         end;
-      3: begin //查询服务端数据库连接是否正常
+      3:
+        begin // 查询服务端数据库连接是否正常
         end;
-      4: begin //激活包
+      4:
+        begin // 激活包
         end;
-      5: begin
+      5:
+        begin
           Flock.Enter;
           try
             ls := GetCurrDBPath(GGDBPath) + 'cfg1.mdb';
-            if (gLastCpTime = 0) or (GetTickCount - gLastCpTime > 3600 * 1000 * 5) then begin
-              CopyFile(PansiChar(GetCurrDBPath(GGDBPath) + 'cfg.mdb'), PansiChar(GetCurrDBPath(GGDBPath) + 'cfg1.mdb'), False);
+            if (gLastCpTime = 0) or
+              (GetTickCount - gLastCpTime > 3600 * 1000 * 5) then
+            begin
+              CopyFile(PChar(GetCurrDBPath(GGDBPath) + 'cfg.mdb'),
+                PChar(GetCurrDBPath(GGDBPath) + 'cfg1.mdb'), false);
               gLastCpTime := GetTickCount;
             end;
             Socket.SendZIpFile(ls, ClientThread);
@@ -442,7 +490,8 @@ begin
             Flock.Leave;
           end;
         end;
-      6: begin
+      6:
+        begin
           Flock.Enter;
           try
             gLmemStream.Size := 0;
@@ -455,10 +504,12 @@ begin
               DataModel.Gqry.Close;
               DataModel.Gqry.SQL.Clear;
               DataModel.Gqry.SQL.Add(LSQl);
-              DataModel.Gqry.Params.ParamByName('Pbob').LoadFromStream(gLmemStream, ftBlob);
+              DataModel.Gqry.Params.ParamByName('Pbob')
+                .LoadFromStream(gLmemStream, ftBlob);
               DataModel.Gqry.Execute;
             except
-              on e: Exception do begin
+              on e: Exception do
+              begin
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
@@ -470,22 +521,27 @@ begin
             Flock.Leave;
           end;
         end;
-      7: begin //自动增长ID
-          //维护一个ID列表 ，每次获取自增长ID由服务端来做唯一
+      7:
+        begin // 自动增长ID
+          // 维护一个ID列表 ，每次获取自增长ID由服务端来做唯一
           Flock.Enter;
           try
             Llen := ClientThread.Socket.ReadInteger;
             LSQl := ClientThread.Socket.ReadStr(Llen);
             if Shower <> nil then
               Shower.AddShow('客户端<%s>查询ID<%s>', [ClientThread.PeerIP, LSQl]);
-            Llen := Fidlst.IndexOf(LowerCase(copy(LSQl, pos('|', LSQl) + 1, length(LSQl))));
+            Llen := Fidlst.IndexOf(LowerCase(copy(LSQl, pos('|', LSQl) + 1,
+              Length(LSQl))));
             try
-              if Llen = -1 then begin
+              if Llen = -1 then
+              begin
                 gider := Tider.Create;
-                gider.Tablename := LowerCase(copy(LSQl, pos('|', LSQl) + 1, length(LSQl)));
+                gider.Tablename :=
+                  LowerCase(copy(LSQl, pos('|', LSQl) + 1, Length(LSQl)));
                 DataModel.Gqry.Close;
                 DataModel.Gqry.SQL.Clear;
-                DataModel.Gqry.SQL.Add(format('select max(%s) as maxid from %s', [copy(LSQl, 1, pos('|', LSQl) - 1), gider.Tablename]));
+                DataModel.Gqry.SQL.Add(format('select max(%s) as maxid from %s',
+                  [copy(LSQl, 1, pos('|', LSQl) - 1), gider.Tablename]));
                 DataModel.Gqry.Open;
                 if (DataModel.Gqry.RecordCount = 0) then
                   gider.Id := 1
@@ -493,7 +549,8 @@ begin
                   gider.Id := DataModel.Gqry.FieldByName('maxid').AsInteger + 1;
                 Fidlst.AddObject(gider.Tablename, gider);
               end
-              else begin
+              else
+              begin
                 gider := Tider(Fidlst.Objects[Llen]);
                 inc(gider.Id);
               end;
@@ -501,13 +558,15 @@ begin
               ClientThread.Socket.WriteInteger(1);
               ClientThread.Socket.WriteInteger(Llen);
             except
-              on e: Exception do begin
+              on e: Exception do
+              begin
                 ClientThread.Socket.WriteInteger(-1);
                 ClientThread.Socket.WriteInteger(Length(e.Message));
                 ClientThread.Socket.Write(e.Message);
                 if Shower <> nil then
                   Shower.AddShow('客户端获取ID异常<%s>', [e.Message]);
-                if e is EAccessViolation then begin
+                if e is EAccessViolation then
+                begin
                   if Shower <> nil then
                     Shower.AddShow('发现数据库对象地址访问错误', [e.Message]);
                 end;
@@ -517,7 +576,7 @@ begin
             Flock.Leave;
           end;
         end;
-    end; //case
+    end; // case
   except
     on e: Exception do
       if Shower <> nil then
@@ -534,7 +593,6 @@ begin
   gLmemStream.Free;
 end;
 
-
 function TRmodbSvr.GetCurrDBPath(InPath: ansistring): ansistring;
 var
   ISql: string;
@@ -549,7 +607,8 @@ begin
     TStr := TStringList.Create;
     GetEveryWord(ISql, TStr, '\');
     iCount := TStr.Count;
-    for i := 0 to Tstr.Count - 2 do begin
+    for i := 0 to TStr.Count - 2 do
+    begin
       IGetPath := IGetPath + TStr[i] + '\';
     end;
     TStr.Free;
@@ -558,8 +617,8 @@ begin
   end;
 end;
 
-function TRmodbSvr.ReadStream(Istream: TStream; ClientThread: TAsioClient):
-  TMemoryStream;
+function TRmodbSvr.ReadStream(Istream: TStream; ClientThread: TAsioClient)
+  : TMemoryStream;
 var
   LBuff: Pointer;
   i, ltot, x: Integer;
@@ -571,7 +630,8 @@ begin
   LBuff := TMemoryStream(Istream).Memory;
   ltot := Istream.Size;
   x := 0;
-  while ltot > 0 do begin
+  while ltot > 0 do
+  begin
     i := ClientThread.Socket.ReadBuff(PansiChar(LBuff) + x, ltot);
     Dec(ltot, i);
     inc(x, i);
@@ -579,12 +639,12 @@ begin
   Result := TMemoryStream(Istream);
 end;
 
-
 function TRmodbSvr.OnCheckLogin(ClientThread: TAsioClient): boolean;
 var
   i: Integer;
   lspit: TStrings;
-  lname, lpsd, ls: string;
+  lname, lpsd, ls: ansistring;
+  lws: string;
 begin
   inherited OnCheckLogin(ClientThread);
   i := ClientThread.Socket.ReadInteger;
@@ -593,13 +653,18 @@ begin
   try
     Gob_CFGer.SetSecton('auth');
     lspit := TStringList.Create;
-    ExtractStrings(['|'], [' '], pansichar(ls), lspit);
-    if lspit.Count = 2 then begin
-      if trim(lspit[0]) <> '' then begin
-        //做客户端登陆权限认证
+    lws := ls;
+    ExtractStrings(['|'], [' '], PChar(lws), lspit);
+    if lspit.Count = 2 then
+    begin
+      if trim(lspit[0]) <> '' then
+      begin
+        // 做客户端登陆权限认证
         lpsd := Gob_CFGer.ReadString(lspit[0]);
-        if length(lspit[1]) > 0 then begin
-          if lpsd = Str_Decry(lspit[1], 'rmo') then begin
+        if Length(lspit[1]) > 0 then
+        begin
+          if lpsd = Str_Decry(lspit[1], 'rmo') then
+          begin
             Result := true;
             if Shower <> nil then
               Shower.AddShow('用户:%s，认证通过，成功连接...', [lspit[0]]);
@@ -617,4 +682,3 @@ begin
 end;
 
 end.
-

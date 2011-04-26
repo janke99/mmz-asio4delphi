@@ -1,9 +1,9 @@
 object frm_main: Tfrm_main
   Left = 296
   Top = 163
-  Width = 685
-  Height = 513
   Caption = #36828#31243#25968#25454#24211#28436#31034#23458#25143#31471#31243#24207
+  ClientHeight = 486
+  ClientWidth = 677
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -39,7 +39,7 @@ object frm_main: Tfrm_main
     Left = 0
     Top = 49
     Width = 677
-    Height = 430
+    Height = 437
     ActivePage = ts_one
     Align = alClient
     TabOrder = 1
@@ -146,21 +146,26 @@ object frm_main: Tfrm_main
     object ts_two: TTabSheet
       Caption = #22823#20108#36827#21046#23383#27573#23384#21462#28436#31034
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object pnlower: TPanel
         Left = 137
         Top = 0
         Width = 532
-        Height = 402
+        Height = 409
         Align = alClient
         Caption = 'pnlower'
         ParentBackground = False
         TabOrder = 0
+        ExplicitHeight = 402
       end
       object ListBox1: TListBox
         Left = 0
         Top = 0
         Width = 137
-        Height = 402
+        Height = 409
         Align = alLeft
         DragMode = dmAutomatic
         ImeName = 'Chinese (Simplified) - US Keyboard'
@@ -175,10 +180,14 @@ object frm_main: Tfrm_main
     object ts_sub: TTabSheet
       Caption = #20027#20174#34920#28436#31034
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label1: TLabel
         Left = 70
         Top = 185
-        Width = 146
+        Width = 126
         Height = 13
         Caption = #19978#36793#26159#20027#34920'  '#19979#36793#26159#20174#34920
       end
