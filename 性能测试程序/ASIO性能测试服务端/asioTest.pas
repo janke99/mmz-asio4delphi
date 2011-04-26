@@ -50,8 +50,7 @@ var
   GechoSvr: TechoSvr;
 implementation
 
-uses
-  untfunctions;
+
 
 
 type

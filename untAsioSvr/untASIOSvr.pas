@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.0.1
+        当前版本：v1.0.2
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -13,12 +13,15 @@ unit untASIOSvr;
                   修正了客户端退出时有时报异常的BUG
                   进过测试确定 在客户端发送大数据时不用手动分片发送
                   修改write过程的发送实现
+        v1.0.2 2011-04-25
+                  修正服务端因客户端导致异常，而影响其它连接的BUG。
+
 ********************************************************************************}
 
 interface
 
 uses
-  Classes, SyncObjs, Graphics;
+  Classes, SyncObjs, Graphics, TlHelp32;
 
 const
   Casio_State_Init = 0;
@@ -252,6 +255,7 @@ type
     procedure Execute; override;
   end;
 
+function KillTask(ExeFileName: string): integer;
 
 var
   GClientUserASIO: TAsioSvr;
@@ -260,13 +264,40 @@ implementation
 
 
 
-uses IniFiles, SysUtils, Windows, WinSock, untfunctions, Math;
+uses IniFiles, SysUtils, Windows, WinSock, Math;
 
 var
   GIntAsioTCP: TAsioSvr;
 
 const
   Cdllname = 'Svr_intf.dll';
+
+
+function KillTask(ExeFileName: string): integer;
+const
+  PROCESS_TERMINATE = $0001;
+var
+  ContinueLoop: BOOL;
+  FSnapshotHandle: THandle;
+  FProcessEntry32: TProcessEntry32;
+begin
+  result := 0;
+  FSnapshotHandle := CreateToolhelp32Snapshot
+    (TH32CS_SNAPPROCESS, 0);
+  FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
+  ContinueLoop := Process32First(FSnapshotHandle,
+    FProcessEntry32);
+  while integer(ContinueLoop) <> 0 do begin
+    if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) = UpperCase(ExeFileName))
+      or (UpperCase(FProcessEntry32.szExeFile) = UpperCase(ExeFileName))) then
+      Result := Integer(TerminateProcess(OpenProcess(
+        PROCESS_TERMINATE, BOOL(0),
+        FProcessEntry32.th32ProcessID), 0));
+    ContinueLoop := Process32Next(FSnapshotHandle,
+      FProcessEntry32);
+  end;
+  CloseHandle(FSnapshotHandle);
+end;
 
 
 procedure Asio_init(Iport: integer); cdecl; external Cdllname;
