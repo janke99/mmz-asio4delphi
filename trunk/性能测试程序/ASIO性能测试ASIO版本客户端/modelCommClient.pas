@@ -81,7 +81,7 @@ var
 
 implementation
 
-uses windows, untfunctions, SysUtils, DXSock, modelASIOtest, untASIOSvr;
+uses windows, untfunctions, SysUtils,  modelASIOtest, untASIOSvr;
 
 
 

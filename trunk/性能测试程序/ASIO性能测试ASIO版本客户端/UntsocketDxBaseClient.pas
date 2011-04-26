@@ -51,13 +51,11 @@ var
 implementation
 
 uses
-  Windows, SysUtils, untfunctions, DXSocket;
+  Windows, SysUtils, untfunctions;
 
 { TSocketClient }
 
 function TSocketClient.Connto(IIP: string; Iport: Word): boolean;
-var
-  LConn: TNewConnect;
 begin
   Result := false;
   FHost := IIP;
