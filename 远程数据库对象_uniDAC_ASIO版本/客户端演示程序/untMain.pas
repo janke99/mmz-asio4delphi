@@ -54,7 +54,7 @@ var
   frm_main: Tfrm_main;
 implementation
 
-uses untfunctions, ViewGraph, PMyBaseDebug;
+uses untfunctions,  PMyBaseDebug;
 
 {$R *.dfm}
 
@@ -131,29 +131,27 @@ end;
 
 
 procedure Tfrm_main.FormShow(Sender: TObject);
-var
-  Litem: TInfoMap;
 begin
-  Litem := TInfoMap.Create;
-  Litem.id := '1';
-  Litem.Cpt := '拖放节点1';
-  ListBox1.Clear;
-  ListBox1.Items.AddObject(Litem.Cpt, Litem);
-
-
-  Litem := TInfoMap.Create;
-  Litem.id := '2';
-  Litem.Cpt := '拖放节点2';
-  ListBox1.Items.AddObject(Litem.Cpt, Litem);
-
-
-
-
-  View_Graph := TView_Graph.Create(Application);
-  View_Graph.Parent := pnlower;
-  View_Graph.Show;
-  ListBox1.OnClick := View_Graph.OnModelTreeClick;
-
+//  Litem := TInfoMap.Create;
+//  Litem.id := '1';
+//  Litem.Cpt := '拖放节点1';
+//  ListBox1.Clear;
+//  ListBox1.Items.AddObject(Litem.Cpt, Litem);
+//
+//
+//  Litem := TInfoMap.Create;
+//  Litem.id := '2';
+//  Litem.Cpt := '拖放节点2';
+//  ListBox1.Items.AddObject(Litem.Cpt, Litem);
+//
+//
+//
+//
+//  View_Graph := TView_Graph.Create(Application);
+//  View_Graph.Parent := pnlower;
+//  View_Graph.Show;
+//  ListBox1.OnClick := View_Graph.OnModelTreeClick;
+//
 end;
 
 procedure Tfrm_main.btn1Click(Sender: TObject);

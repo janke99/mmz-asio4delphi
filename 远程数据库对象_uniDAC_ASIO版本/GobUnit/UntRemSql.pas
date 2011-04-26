@@ -40,16 +40,16 @@ type
    // function OpenTable(ItabName: string; Iado: TClientDataSet): TClientDataSet; overload;
     //function OpenTable(ItabName: string; IQueryRight: integer = 1): TClientDataSet; overload;
       {连接数据库服务端 iTestTable是测试查询的表名，必须要有}
-    function ConnetToSvr(ISvrIP: string; ISvrPort: Word): Boolean;
+    function ConnetToSvr(ISvrIP: ansistring; ISvrPort: Word): Boolean;
     //重新连接服务器
-    function ReConnSvr(ISvrIP: string; ISvrPort: Integer = -1; Iacc: string = '';
+    function ReConnSvr(ISvrIP: ansistring; ISvrPort: Integer = -1; Iacc: string = '';
       iPsd: string = ''): boolean;
     //批量提交语句  立即执行所传入的语句列表
     function BathExecSqls(IsqlList: TStrings): Integer;
     //添加批量提交语句到发送列表
-    function AddBathExecSql(Isql: string): boolean; overload;
+    function AddBathExecSql(Isql: ansistring): boolean; overload;
     //添加批量提交语句 等待执行          BathExec
-    function AddBathExecSql(Isql: string; const Args: array of const): boolean; overload;
+    function AddBathExecSql(Isql: ansistring; const Args: array of const): boolean; overload;
     //立即将所有添加的语句发送到服务端执行
     function BathExec: Integer;
 
@@ -70,23 +70,23 @@ uses winsock, untFunctions;
 
 
 
-function HostToIP(Name: string; var Ip: string): Boolean;
+function HostToIP(IName:  ansistring; var IIp: ansistring): Boolean;
 var
   wsdata: TWSAData;
-  hostName: array[0..255] of char;
+  hostName: array[0..255] of AnsiChar;
   hostEnt: PHostEnt;
-  addr: PChar;
+  addr: PansiChar;
 begin
   WSAStartup($0101, wsdata);
   try
     gethostname(hostName, sizeof(hostName));
-    StrPCopy(hostName, Name);
+    StrPCopy(hostName, iName);
     hostEnt := gethostbyname(hostName);
     if Assigned(hostEnt) then
       if Assigned(hostEnt^.h_addr_list) then begin
         addr := hostEnt^.h_addr_list^;
         if Assigned(addr) then begin
-          IP := Format('%d.%d.%d.%d', [byte(addr[0]),
+          iIP := Format('%d.%d.%d.%d', [byte(addr[0]),
             byte(addr[1]), byte(addr[2]), byte(addr[3])]);
           Result := True;
         end
@@ -190,7 +190,7 @@ begin
   MyExec(Format(Isql, Args));
 end;
 
-function TRmoHelper.ConnetToSvr(ISvrIP: string; ISvrPort: Word): Boolean;
+function TRmoHelper.ConnetToSvr(ISvrIP: ansistring; ISvrPort: Word): Boolean;
 var
   LSql: string;
 begin
@@ -211,7 +211,7 @@ begin
   Result := IQry;
 end;
 
-function TRmoHelper.ReConnSvr(ISvrIP: string; ISvrPort: Integer = -1;
+function TRmoHelper.ReConnSvr(ISvrIP: ansistring; ISvrPort: Integer = -1;
   Iacc: string = ''; iPsd: string = ''): boolean;
 begin
   if IsLegalIP(ISvrIP) = false then
@@ -219,7 +219,7 @@ begin
   Result := FRmoClient.ReConn(ISvrIP, ISvrPort, Iacc, ipsd);
 end;
 
-function TRmoHelper.AddBathExecSql(Isql: string): boolean;
+function TRmoHelper.AddBathExecSql(Isql: ansistring): boolean;
 begin
   Result := true;
   if Isql <> '' then
@@ -231,7 +231,7 @@ begin
   Result := FRmoClient.BathExecSqls(IsqlList);
 end;
 
-function TRmoHelper.AddBathExecSql(Isql: string;
+function TRmoHelper.AddBathExecSql(Isql: ansistring;
   const Args: array of const): boolean;
 begin
   Isql := format(Isql, Args);
