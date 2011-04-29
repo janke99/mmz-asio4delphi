@@ -210,7 +210,7 @@ end;
 procedure Tview_main.FormCloseQuery(Sender: TObject;
   var CanClose: Boolean);
 begin
-  KillTask(ParamStr(0));
+  KillTask(ExtractFileName(ParamStr(0)));
 end;
 
 end.
