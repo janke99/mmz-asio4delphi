@@ -515,6 +515,7 @@ end;
 
 function TAsioSvr.DisConn(IClient: TasioClient): boolean;
 begin
+  IClient.DeadTime := GetTickCount;
   IClient.CloseConn;
 end;
 

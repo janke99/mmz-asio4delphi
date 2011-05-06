@@ -213,9 +213,11 @@ var
   i: integer;
 begin
   for i := 0 to Socket.FClientLst.Count - 1 do begin
-    Result := Result + Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name;
-    if i < Socket.FClientLst.Count - 1 then
-      Result := Result + ','
+    if TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil then begin
+      Result := Result + Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name;
+      if i < Socket.FClientLst.Count - 1 then
+        Result := Result + ','
+    end;
   end;
 end;
 
@@ -258,7 +260,7 @@ var
   i: integer;
 begin
   for i := 0 to Socket.FClientLst.Count - 1 do begin
-    if iclient <> TAsioClient(Socket.FClientLst.Objects[i]) then begin
+    if (iclient <> TAsioClient(Socket.FClientLst.Objects[i])) and (TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil) then begin
       TAsioClient(Socket.FClientLst.Objects[i]).Socket.Writeinteger(4);
       TAsioClient(Socket.FClientLst.Objects[i]).Socket.Writeinteger(ikind); //1 ¼ÓÈë, 2 Àë¿ª
     end;

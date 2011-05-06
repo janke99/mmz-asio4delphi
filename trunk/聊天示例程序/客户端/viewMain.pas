@@ -55,6 +55,7 @@ end;
 
 procedure Tview_Main.btn1Click(Sender: TObject);
 begin
+
   if Gob_RmoCtler = nil then begin
     Gob_RmoCtler := TchatClient.Create;
     if Gob_RmoCtler.ConnToSvr(Edit1.Text, 9951, Edit2.Text, Str_Encry('12345', 'cht')) = false then begin
