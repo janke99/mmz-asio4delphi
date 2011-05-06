@@ -687,7 +687,6 @@ var
   lp, lfir: pansichar;
 
 begin
-  Exit;
   //当数据超过一定量 重新装载数据 1/2M数据后重新刷新
   FDataLock.Acquire;
   try
