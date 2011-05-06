@@ -145,6 +145,7 @@ type
   end;
    {客户端对象}
   TAsioClient = class
+    clientkind: Integer; //客户端类型 ，如果是9 则代表服务端
     FisConning: Boolean;
     Parent: TAsioSvr;
     Guid: string;
@@ -166,6 +167,7 @@ type
     MemPool: TMemPools; //发送缓存池
     lastcasetime: Cardinal; //上一次被处理的时间
     ConnState: Integer; //客户端状态
+    userdata: Pointer; //预留的数据指针
     {服务端时用的发送函数}
     procedure SendData(Idata: TPoolItem);
 
@@ -211,8 +213,9 @@ type
   TAsioSvr = class
   protected
 
-    FmainThread: TThread;
+
   public
+    FmainThread: TThread;
     Fport: Integer;
     FNoliveTimeOut: Integer; //没有心跳的超时客户端
     Flock: TCriticalSection;
@@ -277,6 +280,7 @@ function KillTask(ExeFileName: string): integer;
 const
   PROCESS_TERMINATE = $0001;
 var
+  lid: Cardinal;
   ContinueLoop: BOOL;
   FSnapshotHandle: THandle;
   FProcessEntry32: TProcessEntry32;
@@ -287,9 +291,9 @@ begin
   FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
   ContinueLoop := Process32First(FSnapshotHandle,
     FProcessEntry32);
+  lid := GetCurrentProcessId;
   while integer(ContinueLoop) <> 0 do begin
-    if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) = UpperCase(ExeFileName))
-      or (UpperCase(FProcessEntry32.szExeFile) = UpperCase(ExeFileName))) then
+    if (lid = FProcessEntry32.th32ProcessID) then
       Result := Integer(TerminateProcess(OpenProcess(
         PROCESS_TERMINATE, BOOL(0),
         FProcessEntry32.th32ProcessID), 0));
@@ -617,7 +621,8 @@ begin
   try
     //写入到最后
 //    Memory.Seek(0, soFromEnd);
-    Memory.WriteBuffer(idata^, ilen);
+    if ilen > 0 then
+      Memory.WriteBuffer(idata^, ilen);
     if (Memory.Position - CurrPost >= WantData) then
       Self.Parent.isInCaseList := True;
   finally
@@ -682,10 +687,12 @@ var
   lp, lfir: pansichar;
 
 begin
+  Exit;
   //当数据超过一定量 重新装载数据 1/2M数据后重新刷新
-  if (Memory.Position > 512000) then begin
-    FDataLock.Acquire;
-    try
+  FDataLock.Acquire;
+  try
+    if (Memory.Position > 512000) then begin
+
       lfir := Memory.Memory;
       lp := Memory.Memory;
       inc(lp, CurrPost);
@@ -696,10 +703,11 @@ begin
         CopyMemory(lfir, lp, i);
       Memory.Position := i;
       CurrPost := 0;
-    finally
-      FDataLock.Release;
     end;
+  finally
+    FDataLock.Release;
   end;
+
 end;
 
 { TAsioThreadPool }
@@ -890,6 +898,7 @@ begin
     Sleep(1);
   end;
   Result := RcvDataBuffer.ReadInteger(Itrans);
+
   RcvDataBuffer.ReLoadData;
 end;
 
@@ -1211,7 +1220,7 @@ initialization
 
 finalization
   if GClientUserASIO <> nil then begin
-    KillTask(ExtractFileName(ParamStr(0)));
+//    KillTask(ExtractFileName(ParamStr(0)));
     GClientUserASIO.Free;
   end;
 

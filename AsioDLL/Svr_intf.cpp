@@ -304,7 +304,7 @@ DllExport int Asio_Uninit(int iport)
 	if(gport==0){ 
       lt->cancel();
 	}
-
+	io_service.stop();
 	isfinished=true;
  	return 0;	
 }
