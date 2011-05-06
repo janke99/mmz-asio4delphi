@@ -1,7 +1,7 @@
 program ChatDemoSvr;
 
 uses
-  FastMM4,
+ // FastMM4,
   Forms,
   viewMain in 'viewMain.pas' {view_Main},
   UntRmodbSvr in 'UntRmodbSvr.pas',

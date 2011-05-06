@@ -136,8 +136,13 @@ begin
       end
       else begin
         ClientThread.ConnState := Casio_State_DisConn;
-        OnDisConn(ClientThread);
-        ClientThread.Socket.Disconnect;
+        try
+          Socket.DisConn(ClientThread);
+//        ClientThread.Socket.Disconnect;
+        except
+
+        end;
+        Exit;
       end;
     end
     else if IClient.ConnState = Casio_State_Conned then begin

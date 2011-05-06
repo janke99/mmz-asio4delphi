@@ -143,8 +143,10 @@ begin
         ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'cht')]);
         Writeinteger(Length(ls));
         Write(ls);
-        if ReadInteger <> STCLogined then
+        if ReadInteger <> STCLogined then begin
           Result := False;
+          Exit;
+        end;
         FisConning := True;
         FIsDisConn := False;
         Ftimer.Enabled := True;
@@ -180,8 +182,10 @@ end;
 
 procedure TchatClient.Getonlineuser;
 begin
-  SendAsioHead(4);
-  Writeinteger(1);
+  if Gob_RmoCtler.IsConning then begin
+    SendAsioHead(4);
+    Writeinteger(1);
+  end;
 end;
 
 procedure TchatClient.OnCheck(Sender: TObject);
