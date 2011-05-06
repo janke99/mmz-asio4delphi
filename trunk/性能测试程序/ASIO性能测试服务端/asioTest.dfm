@@ -89,6 +89,24 @@ object view_main: Tview_main
     Caption = 'Label5'
     Visible = False
   end
+  object btn1: TButton
+    Left = 112
+    Top = 232
+    Width = 75
+    Height = 25
+    Caption = #26242#20572
+    TabOrder = 0
+    OnClick = btn1Click
+  end
+  object Button1: TButton
+    Left = 200
+    Top = 232
+    Width = 75
+    Height = 25
+    Caption = #24674#22797
+    TabOrder = 1
+    OnClick = Button1Click
+  end
   object tmr1: TTimer
     Interval = 3000
     OnTimer = tmr1Timer

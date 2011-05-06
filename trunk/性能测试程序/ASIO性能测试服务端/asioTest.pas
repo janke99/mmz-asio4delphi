@@ -20,9 +20,13 @@ type
     lbl_SendBuff: TLabel;
     tmr1: TTimer;
     Label5: TLabel;
+    btn1: TButton;
+    Button1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure tmr1Timer(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure btn1Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -210,7 +214,18 @@ end;
 procedure Tview_main.FormCloseQuery(Sender: TObject;
   var CanClose: Boolean);
 begin
-  KillTask(ExtractFileName(ParamStr(0)));
+//  KillTask(ExtractFileName(ParamStr(0)));
+  GechoSvr.Free;
+end;
+
+procedure Tview_main.btn1Click(Sender: TObject);
+begin
+  GechoSvr.FmainThread.Suspend;
+end;
+
+procedure Tview_main.Button1Click(Sender: TObject);
+begin
+  GechoSvr.FmainThread.Resume;
 end;
 
 end.
