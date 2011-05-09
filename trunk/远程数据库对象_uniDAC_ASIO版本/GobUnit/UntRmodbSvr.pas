@@ -317,7 +317,7 @@ begin
                   [ClientThread.PeerIP + '' + IntToStr(ClientThread.PeerPort)]);
               end;
               try
-                DataModel.UniProc.ExecSQL;
+                DataModel.UniProc.ExecProc;
                 DataModel.Coner.Commit;
                 ClientThread.Socket.WriteInteger(1);
                 // 向客户端返回output参数值

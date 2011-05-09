@@ -246,6 +246,8 @@ var
   llen: integer;
   lls: string;
 begin
+  IContent := StringReplace(IContent, #13, ' ', [rfReplaceAll]);
+  IContent := StringReplace(IContent, #10, ' ', [rfReplaceAll]);
   lls := Format('%s|%s', [iToWho, IContent]);
   llen := length(lls);
   SendAsioHead(8 + llen);

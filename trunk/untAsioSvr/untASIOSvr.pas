@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.0.2
+        当前版本：v1.0.2a
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -15,13 +15,18 @@ unit untASIOSvr;
                   修改write过程的发送实现
         v1.0.2 2011-04-25
                   修正服务端因客户端导致异常，而影响其它连接的BUG。
+                  修正服务端最后一个连接不被处理的BUG
+        v1.0.2a 2011-05-07
+                  修正TASIOCLIENT的 readinteger方法的一个bug，
+                  感谢群友FlashDance反馈的BUG : )
+                  修正服务端退出时的异常，修改通过killtask结束进程的方式
 
 ********************************************************************************}
 
 interface
 
 uses
-  Classes, SyncObjs, Graphics, TlHelp32;
+  Classes, SyncObjs, Graphics;
 
 const
   Casio_State_Init = 0;
@@ -276,32 +281,32 @@ const
   Cdllname = 'Svr_intf.dll';
 
 
-function KillTask(ExeFileName: string): integer;
-const
-  PROCESS_TERMINATE = $0001;
-var
-  lid: Cardinal;
-  ContinueLoop: BOOL;
-  FSnapshotHandle: THandle;
-  FProcessEntry32: TProcessEntry32;
-begin
-  result := 0;
-  FSnapshotHandle := CreateToolhelp32Snapshot
-    (TH32CS_SNAPPROCESS, 0);
-  FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
-  ContinueLoop := Process32First(FSnapshotHandle,
-    FProcessEntry32);
-  lid := GetCurrentProcessId;
-  while integer(ContinueLoop) <> 0 do begin
-    if (lid = FProcessEntry32.th32ProcessID) then
-      Result := Integer(TerminateProcess(OpenProcess(
-        PROCESS_TERMINATE, BOOL(0),
-        FProcessEntry32.th32ProcessID), 0));
-    ContinueLoop := Process32Next(FSnapshotHandle,
-      FProcessEntry32);
-  end;
-  CloseHandle(FSnapshotHandle);
-end;
+//function KillTask(ExeFileName: string): integer;
+//const
+//  PROCESS_TERMINATE = $0001;
+//var
+//  lid: Cardinal;
+//  ContinueLoop: BOOL;
+//  FSnapshotHandle: THandle;
+//  FProcessEntry32: TProcessEntry32;
+//begin
+//  result := 0;
+//  FSnapshotHandle := CreateToolhelp32Snapshot
+//    (TH32CS_SNAPPROCESS, 0);
+//  FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
+//  ContinueLoop := Process32First(FSnapshotHandle,
+//    FProcessEntry32);
+//  lid := GetCurrentProcessId;
+//  while integer(ContinueLoop) <> 0 do begin
+//    if (lid = FProcessEntry32.th32ProcessID) then
+//      Result := Integer(TerminateProcess(OpenProcess(
+//        PROCESS_TERMINATE, BOOL(0),
+//        FProcessEntry32.th32ProcessID), 0));
+//    ContinueLoop := Process32Next(FSnapshotHandle,
+//      FProcessEntry32);
+//  end;
+//  CloseHandle(FSnapshotHandle);
+//end;
 
 
 procedure Asio_init(Iport: integer); cdecl; external Cdllname;
@@ -515,7 +520,7 @@ end;
 
 function TAsioSvr.DisConn(IClient: TasioClient): boolean;
 begin
-  IClient.DeadTime := GetTickCount;
+//  IClient.DeadTime := GetTickCount;
   IClient.CloseConn;
 end;
 
@@ -897,7 +902,7 @@ begin
     end;
     Sleep(1);
   end;
-  Result := RcvDataBuffer.ReadInteger(Itrans);
+  Result := RcvDataBuffer.ReadInteger(False,Itrans);
 
   RcvDataBuffer.ReLoadData;
 end;

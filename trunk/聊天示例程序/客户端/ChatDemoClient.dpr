@@ -1,7 +1,7 @@
 program ChatDemoClient;
 
 uses
-  FastMM4,
+//  FastMM4,
   Forms,
   viewMain in 'viewMain.pas' {view_Main},
   untRmoDbClient in 'untRmoDbClient.pas',
