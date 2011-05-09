@@ -55,19 +55,19 @@ end;
 
 procedure Tview_Main.btn1Click(Sender: TObject);
 begin
-
   if Gob_RmoCtler = nil then begin
     Gob_RmoCtler := TchatClient.Create;
-    if Gob_RmoCtler.ConnToSvr(Edit1.Text, 9951, Edit2.Text, Str_Encry('12345', 'cht')) = false then begin
-      raise Exception.Create('登录服务器失败！');
-    end
-    else begin
-      AddShow('连接服务器成功，请求返回在线用户列表');
-      tmr_getlst.Enabled := true;
-      tmr_rcv.Enabled := True;
-      btn1.Enabled := false;
-      Edit2.Enabled := False;
-    end;
+  end;
+  if Gob_RmoCtler.ConnToSvr(Edit1.Text, 9951, Edit2.Text, Str_Encry('12345', 'cht')) = false then begin
+    ShowMessage('登录服务器失败！');
+    KillTask(ExtractFileName(ParamStr(0)));
+  end
+  else begin
+    AddShow('连接服务器成功，请求返回在线用户列表');
+    tmr_getlst.Enabled := true;
+    tmr_rcv.Enabled := True;
+    btn1.Enabled := false;
+    Edit2.Enabled := False;
   end;
 end;
 
@@ -130,7 +130,7 @@ begin
   end
   else begin
   // AddShow('不要发言太快啦');
-    exit;
+//    exit;
   end;
   Lcrd := GetTickCount;
   if ListBox1.ItemIndex = -1 then begin
