@@ -263,7 +263,7 @@ type
     procedure Execute; override;
   end;
 
-function KillTask(ExeFileName: string): integer;
+//function KillTask: integer;
 
 var
   GClientUserASIO: TAsioSvr;
