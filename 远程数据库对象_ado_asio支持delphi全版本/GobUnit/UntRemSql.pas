@@ -58,38 +58,38 @@ uses winsock, untFunctions;
 
 
 
-//function HostToIP(Name: string; var Ip: string): Boolean;
-//var
-//  wsdata: TWSAData;
-//  hostName: array[0..255] of char;
-//  hostEnt: PHostEnt;
-//  addr: PChar;
-//begin
-//  WSAStartup($0101, wsdata);
-//  try
-//    gethostname(hostName, sizeof(hostName));
-//    StrPCopy(hostName, Name);
-//    hostEnt := gethostbyname(hostName);
-//    if Assigned(hostEnt) then
-//      if Assigned(hostEnt^.h_addr_list) then begin
-//        addr := hostEnt^.h_addr_list^;
-//        if Assigned(addr) then begin
-//          IP := Format('%d.%d.%d.%d', [byte(addr[0]),
-//            byte(addr[1]), byte(addr[2]), byte(addr[3])]);
-//          Result := True;
-//        end
-//        else
-//          Result := False;
-//      end
-//      else
-//        Result := False
-//    else begin
-//      Result := False;
-//    end;
-//  finally
-//    WSACleanup;
-//  end
-//end;
+function HostToIP(IName:  ansistring; var IIp: ansistring): Boolean;
+var
+  wsdata: TWSAData;
+  hostName: array[0..255] of AnsiChar;
+  hostEnt: PHostEnt;
+  addr: PansiChar;
+begin
+  WSAStartup($0101, wsdata);
+  try
+    gethostname(hostName, sizeof(hostName));
+    StrPCopy(hostName, iName);
+    hostEnt := gethostbyname(hostName);
+    if Assigned(hostEnt) then
+      if Assigned(hostEnt^.h_addr_list) then begin
+        addr := hostEnt^.h_addr_list^;
+        if Assigned(addr) then begin
+          iIP := Format('%d.%d.%d.%d', [byte(addr[0]),
+            byte(addr[1]), byte(addr[2]), byte(addr[3])]);
+          Result := True;
+        end
+        else
+          Result := False;
+      end
+      else
+        Result := False
+    else begin
+      Result := False;
+    end;
+  finally
+    WSACleanup;
+  end
+end;
 
 procedure TRmoHelper.MyQuery(IADOQry: TADOQuery;
   ISqlStr: string);
@@ -213,8 +213,8 @@ end;
 
 function TRmoHelper.ReConnSvr(ISvrIP: string; ISvrPort: Integer): boolean;
 begin
-//  if IsLegalIP(ISvrIP) = false then
-//    HostToIP(ISvrIP, ISvrIP);
+  if IsLegalIP(ISvrIP) = false then
+    HostToIP(ISvrIP, ISvrIP);
   Result := FRmoClient.ReConn(ISvrIP, ISvrPort);
 end;
 
