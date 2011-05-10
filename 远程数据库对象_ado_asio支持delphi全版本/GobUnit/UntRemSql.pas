@@ -195,8 +195,8 @@ var
   LSql: string;
 begin
   try
-//    if IsLegalIP(ISvrIP) = false then
-//      HostToIP(ISvrIP, ISvrIP);
+    if IsLegalIP(ISvrIP) = false then
+      HostToIP(ISvrIP, ISvrIP);
 
     Result := FRmoClient.ConnToSvr(ISvrIP, ISvrPort);
   except
