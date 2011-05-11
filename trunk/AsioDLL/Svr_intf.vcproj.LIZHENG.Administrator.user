@@ -9,7 +9,7 @@
 			Name="Debug|Win32"
 			>
 			<DebugSettings
-				Command="F:\¿ìÅÌ\myAsio\asiosvr\AsioDLL\Debug\ASIOTESpro.exe"
+				Command="F:\¿ìÅÌ\myAsio\mmz-asio4delphi\AsioDLL\Debug\demoClient.exe"
 				WorkingDirectory=""
 				CommandArguments=""
 				Attach="false"

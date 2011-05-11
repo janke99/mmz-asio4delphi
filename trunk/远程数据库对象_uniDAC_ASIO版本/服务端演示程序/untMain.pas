@@ -31,12 +31,18 @@ var
   Gio: TIOer; //日志对象 可显示和记录日志信息
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
+var
+  i: Integer;
 begin
   //创建日志对象
   Gio := TIOer.Create(lvLog, GetCurrPath + 'log\');
 //  Gio.Enabled:=false;
   //创建数据服务器对象 使用9000端口
   Gob_RmoDBsvr := TRmodbSvr.Create(9000, Gio);
+  //设置初始的数据库连接池数为5个
+  for i := 0 to 4 do
+    Gob_RmoDBsvr.DBPoolsMM.GetAnPools.Isused := False;
+
   AssignCfgFile(GetCurrPath() + 'sys.ini');
 end;
 

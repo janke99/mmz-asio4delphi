@@ -123,6 +123,7 @@ type
     Gbuff: array[0..2048] of byte;
     Memory: TMemoryStream;
     WantData: integer;
+    TmpSendbuffer: TPoolItem; //临时发送数据对象
     procedure ReLoadData; //重新装载数据 以免缓存太大
     procedure Indata(Idata: pointer; ilen: integer); //数据进入队列
 //------------------------------------------------------------------------------
@@ -134,6 +135,19 @@ type
     procedure Writeinteger(Iin: Integer; Ihtn: boolean = true);
     procedure Write(IBuffer: Pointer; Ilen: Integer); overload;
     procedure Write(IStr: AnsiString); overload;
+
+//------------------------------------------------------------------------------
+// 添加临时发送数据处理  2011-05-10 15:56:55   马敏钊
+//------------------------------------------------------------------------------
+   //申请临时对象
+    procedure BeginMakeData;
+    procedure MakeData_Writeinteger(Iin: Integer; Ihtn: boolean = true);
+    procedure MakeData_Write(IBuffer: Pointer; Ilen: Integer); overload;
+    procedure MakeData_Write(IStr: AnsiString); overload;
+   //结束并发送
+    procedure EndMakeData;
+
+
     {断开连接}
     procedure Disconnect;
 //------------------------------------------------------------------------------
@@ -404,12 +418,16 @@ var
 begin
   //asio服务端接收到数据
   if Iuserdata > 0 then begin
-    Lci := TAsioClient(Iuserdata);
-    Lci.RcvCount := Lci.RcvCount + Ilen;
-    Lci.LiveTime := GetTickCount;
-    Lci.RcvDataBuffer.Indata(IData, Ilen);
-    if Assigned(GIntAsioTCP.FOnClientRecvData) then
-      GIntAsioTCP.FOnClientRecvData(Lci, IData, Ilen);
+    //必须保护起来 以免影响动态库里的继续回调
+    try
+      Lci := TAsioClient(Iuserdata);
+      Lci.RcvCount := Lci.RcvCount + Ilen;
+      Lci.LiveTime := GetTickCount;
+      Lci.RcvDataBuffer.Indata(IData, Ilen);
+      if Assigned(GIntAsioTCP.FOnClientRecvData) then
+        GIntAsioTCP.FOnClientRecvData(Lci, IData, Ilen);
+    except
+    end;
   end;
 end;
 
@@ -419,13 +437,17 @@ var
 begin
   //asio服务端接收到数据
   if Iuserdata > 0 then begin
-    Lci := TAsioClient(Iuserdata);
-    Lci.LiveTime := GetTickCount;
-    Lci.SendCount := Lci.SendCount + TPoolItem(iuser2).FMem.Position;
-    Lci.MemPool.BackBuff(TPoolItem(iuser2));
-    InterlockedDecrement(Lci.SendRef);
-    if Assigned(GIntAsioTCP.FOnClientRecvData) then
-      GIntAsioTCP.FonClientSendData(Lci, nil, TPoolItem(iuser2).FMem.Position);
+    //必须保护起来 以免影响动态库里的继续回调
+    try
+      Lci := TAsioClient(Iuserdata);
+      Lci.LiveTime := GetTickCount;
+      Lci.SendCount := Lci.SendCount + TPoolItem(iuser2).FMem.Position;
+      Lci.MemPool.BackBuff(TPoolItem(iuser2));
+      InterlockedDecrement(Lci.SendRef);
+      if Assigned(GIntAsioTCP.FOnClientRecvData) then
+        GIntAsioTCP.FonClientSendData(Lci, nil, TPoolItem(iuser2).FMem.Position);
+    except
+    end;
   end;
 end;
 
@@ -482,9 +504,13 @@ begin
     end;
     //同时可以判断长时间没有心跳的连接
     for i := FClientLst.Count - 1 downto 0 do begin
-      if (GetTickCount - TAsioClient(FClientLst.Objects[i]).LiveTime > FNoliveTimeOut) then begin
+      if  (GetTickCount - TAsioClient(FClientLst.Objects[i]).LiveTime > FNoliveTimeOut) then begin
         try
-          Asio_DisConnedCallback(integer(TAsioClient(FClientLst.Objects[i])));
+          if TAsioClient(FClientLst.Objects[i]).Socketptr > 0 then begin
+            Asio_closesocket(TAsioClient(FClientLst.Objects[i]).Socketptr);
+            TAsioClient(FClientLst.Objects[i]).Socketptr := 0;
+          end;
+        //  Asio_DisConnedCallback(integer(TAsioClient(FClientLst.Objects[i])));
         except
         end;
       end;
@@ -500,12 +526,13 @@ begin
   FClientLst := THashedStringList.Create;
   FDeadClients := TStringList.Create;
   Flock := TCriticalSection.Create;
-  FNoliveTimeOut := 50000; //30秒没有接收到任何数据
+  FNoliveTimeOut := 50000; //50秒没有接收到任何数据
   Asio_SetCallback(1, @Asio_ConnedCallback);
   Asio_SetCallback(2, @Asio_DisConnedCallback);
   Asio_SetCallback(3, @Asio_readdataCallback);
   Asio_SetCallback(4, @Asio_writedataCallback);
   TThread(workPool.FThreadLst.Objects[0]).Resume;
+
 end;
 
 destructor TAsioSvr.Destroy;
@@ -570,6 +597,11 @@ end;
 
 { TDataCase }
 
+procedure TAsioDataBuffer.BeginMakeData;
+begin
+  TmpSendbuffer := Parent.MemPool.GetBuff(CMemPool_FreeMem);
+end;
+
 constructor TAsioDataBuffer.Create;
 begin
   FDataLock := TCriticalSection.Create;
@@ -614,6 +646,11 @@ begin
   ReLoadData;
 end;
 
+procedure TAsioDataBuffer.EndMakeData;
+begin
+  Parent.SendData(TmpSendbuffer);
+end;
+
 function TAsioDataBuffer.GetCanUseSize: Integer;
 begin
   Result := Memory.Position - CurrPost;
@@ -646,6 +683,27 @@ begin
 //      else //则放入处理队列中等待处理
 //        Parent.Parent.workPool.AddMisson(Self.Parent);
  // end;
+end;
+
+procedure TAsioDataBuffer.MakeData_Write(IBuffer: Pointer; Ilen: Integer);
+begin
+  TmpSendbuffer.FMem.WriteBuffer(IBuffer^, Ilen);
+end;
+
+procedure TAsioDataBuffer.MakeData_Write(IStr: AnsiString);
+var
+  i: Integer;
+begin
+  i := length(IStr);
+  TmpSendbuffer.FMem.WriteBuffer(IStr[1], i);
+end;
+
+procedure TAsioDataBuffer.MakeData_Writeinteger(Iin: Integer;
+  Ihtn: boolean);
+begin
+  if Ihtn then
+    Iin := htonl(Iin);
+  TmpSendbuffer.FMem.WriteBuffer(iin, 4);
 end;
 
 function TAsioDataBuffer.ReadBuff(Ibuffer: Pointer; Ilen: integer; IrcvGob:
@@ -902,7 +960,7 @@ begin
     end;
     Sleep(1);
   end;
-  Result := RcvDataBuffer.ReadInteger(False,Itrans);
+  Result := RcvDataBuffer.ReadInteger(False, Itrans);
 
   RcvDataBuffer.ReLoadData;
 end;
