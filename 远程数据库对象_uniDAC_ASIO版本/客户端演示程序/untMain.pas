@@ -93,9 +93,11 @@ begin
   Gob_Rmo := TRmoHelper.Create(9000);
   //连接服务端 为了简单演示填为本机  如果需要连接远程机器改为其他机器的IP 即可
   //登陆时需要填上用户名和密码 服务端配置文件sys.ini中做设置。
-  if Gob_Rmo.ReConnSvr('127.0.0.1', -1, 'client', '456') = false then begin
+  if Gob_Rmo.ReConnSvr('127.0.0.1', -1, 'client', '4561') = false then begin
     ErrorInfo('连接数据库服务程序失败，请先启动服务程序!');
-    KillTask;
+    Application.Terminate;
+    Exit;
+//    KillTask;
   end;
   //获取一个
   Qryopt := Gob_DBMrg.GetAnQuery('Qryopt');

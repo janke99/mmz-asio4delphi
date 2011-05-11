@@ -250,8 +250,8 @@ initialization
 
 
 finalization
-  if Assigned(Gob_Rmo) then
-    Gob_Rmo.Free;
+//  if Assigned(Gob_Rmo) then
+//    Gob_Rmo.Free;
 
 end.
 

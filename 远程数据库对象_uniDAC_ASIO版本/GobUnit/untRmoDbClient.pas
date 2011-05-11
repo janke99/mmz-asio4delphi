@@ -105,7 +105,7 @@ var
 
 implementation
 
-uses untfunctions, sysUtils, UntBaseProctol,  IniFiles, ADOInt, Variants,
+uses untfunctions, sysUtils, UntBaseProctol, IniFiles, ADOInt, Variants,
   Windows, untASIOSvr;
 
 
@@ -235,8 +235,11 @@ begin
         ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'rmo')]);
         Writeinteger(Length(ls));
         Write(ls);
-        if ReadInteger <> STCLogined then
+        if ReadInteger <> STCLogined then begin
           Result := False;
+          DisConn;
+          Exit;
+        end;
         FisConning := True;
         FIsDisConn := False;
         Ftimer.Enabled := True;
@@ -248,8 +251,9 @@ end;
 procedure TRmoClient.DisConn;
 begin
   try
-    if IsConnected then
-      DisConn;
+    CloseConn;
+//    if IsConnected then
+//      DisConn;
   except
   end;
   FIsDisConn := True;
