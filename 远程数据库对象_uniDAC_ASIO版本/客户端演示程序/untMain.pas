@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, UntRemSql, ComCtrls, ExtCtrls, StdCtrls, Grids, DBGrids, DB, dbclient,midaslib;
+  Dialogs, UntRemSql, ComCtrls, ExtCtrls, StdCtrls, Grids, DBGrids, DB, dbclient, midaslib;
 
 type
   Tfrm_main = class(TForm)
@@ -54,9 +54,36 @@ var
   frm_main: Tfrm_main;
 implementation
 
-uses untfunctions,  PMyBaseDebug;
+uses untfunctions, PMyBaseDebug, TlHelp32;
 
 {$R *.dfm}
+
+function KillTask: integer;
+const
+  PROCESS_TERMINATE = $0001;
+var
+  lid: Cardinal;
+  ContinueLoop: BOOL;
+  FSnapshotHandle: THandle;
+  FProcessEntry32: TProcessEntry32;
+begin
+  result := 0;
+  FSnapshotHandle := CreateToolhelp32Snapshot
+    (TH32CS_SNAPPROCESS, 0);
+  FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
+  ContinueLoop := Process32First(FSnapshotHandle,
+    FProcessEntry32);
+  lid := GetCurrentProcessId;
+  while integer(ContinueLoop) <> 0 do begin
+    if (lid = FProcessEntry32.th32ProcessID) then
+      Result := Integer(TerminateProcess(OpenProcess(
+        PROCESS_TERMINATE, BOOL(0),
+        FProcessEntry32.th32ProcessID), 0));
+    ContinueLoop := Process32Next(FSnapshotHandle,
+      FProcessEntry32);
+  end;
+  CloseHandle(FSnapshotHandle);
+end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
 begin
@@ -68,7 +95,7 @@ begin
   //登陆时需要填上用户名和密码 服务端配置文件sys.ini中做设置。
   if Gob_Rmo.ReConnSvr('127.0.0.1', -1, 'client', '456') = false then begin
     ErrorInfo('连接数据库服务程序失败，请先启动服务程序!');
-    Application.Terminate;
+    KillTask;
   end;
   //获取一个
   Qryopt := Gob_DBMrg.GetAnQuery('Qryopt');
