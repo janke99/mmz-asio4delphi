@@ -19,9 +19,40 @@ uses
 {$IFDEF Oracle}, OracleUniProvider, {$ENDIF}
 {$IFDEF MySql}, MySQLUniProvider{$ENDIF}
 {$IFDEF Odbc}, ODBCUniProvider{$ENDIF}
-  ;
+  , AsyncCalls, untASIOSvr, UntTIO, UntTBaseSocketServer, SyncObjs;
 
 type
+  Tdbpool = class //连接池对象
+  public
+    id: Integer;
+    Isused: Boolean;
+    Gtmpbuffer: TMemoryStream;
+    Shower: TIOer;
+    IParent: TBaseSocketServer;
+    ISocker: TAsioClient;
+    IcmdKind: Integer; //命令号
+    IParam: string; //语句
+    IAS: IAsyncCall;
+    FDataProvider: TDataSetProvider;
+    FConner: TUniConnection;
+    FQRy: TUniQuery;
+    FSql: TUniSQL;
+    FProc: TUniStoredProc;
+    constructor Create();
+    destructor Destroy; override;
+  end;
+
+  TDbPoolsMM = class //连接池管理对象
+  private
+    Flock: TCriticalSection;
+  public
+    FLst: TStrings;
+    function GetAnPools: Tdbpool;
+    constructor Create();
+    destructor Destroy; override;
+  end;
+
+
   TDataModel = class(TDataModule)
     DP: TDataSetProvider;
     dpProc: TDataSetProvider;
@@ -33,6 +64,7 @@ type
     Gqry: TUniQuery;
     UniSQL: TUniSQL;
     UniProc: TUniStoredProc;
+    class procedure CfgDb(IConn: TUniConnection);
   end;
 
 var
@@ -47,17 +79,16 @@ uses
 
 
 
-procedure TDataModel.DataModuleCreate(Sender: TObject);
+class procedure TDataModel.CfgDb(IConn: TUniConnection);
 begin
-  coner := TUniConnection.Create(self);
 //------------------------------------------------------------------------------
 // 在此处可以根据需要连接不同的数据库以及填入不同连接参数 2010-04-23 马敏钊
 //------------------------------------------------------------------------------
-  with Coner do begin
+  with IConn do begin
 //连接Access
 {$IFDEF Access}
-    coner.ProviderName := 'Access';
-    coner.Database := GetCurrPath() + 'demo.mdb';
+    ProviderName := 'Access';
+    Database := GetCurrPath() + 'demo.mdb';
 {$ENDIF}
 //连接Interbase或者Firebird
 {$IFDEF InterBase}
@@ -114,6 +145,12 @@ begin
 
 {$ENDIF}
   end;
+end;
+
+procedure TDataModel.DataModuleCreate(Sender: TObject);
+begin
+  coner := TUniConnection.Create(self);
+  CfgDb(Coner);
   coner.Connect;
   Gqry := TUniQuery.Create(Self);
   Gqry.Connection := coner;
@@ -123,6 +160,73 @@ begin
   UniProc.Connection := Coner;
   DP.DataSet := Gqry;
   dpProc.DataSet := UniProc;
+end;
+
+{ Tdbpool }
+
+constructor Tdbpool.Create;
+begin
+  Isused := False;
+  FConner := TUniConnection.Create(nil);
+  FQRy := TUniQuery.Create(nil);
+  FQRy.Connection := FConner;
+  FSql := TUniSQL.Create(nil);
+  FSql.Connection := FConner;
+  FProc := TUniStoredProc.Create(nil);
+  FProc.Connection := FConner;
+  FDataProvider := TDataSetProvider.Create(nil);
+  TDataModel.CfgDb(FConner);
+  FConner.Connected := True;
+end;
+
+destructor Tdbpool.Destroy;
+begin
+  if IAS <> nil then
+    IAS.Sync;
+  FProc.Free;
+  FSql.Free;
+  FQRy.Free;
+  FConner.Free;
+  FDataProvider.Free;
+  inherited;
+end;
+
+{ TDbPoolsMM }
+
+constructor TDbPoolsMM.Create;
+begin
+  FLst := TStringList.Create;
+  Flock := TCriticalSection.Create;
+end;
+
+destructor TDbPoolsMM.Destroy;
+begin
+  Flock.Free;
+  ClearAndFreeList(FLst);
+  inherited;
+end;
+
+function TDbPoolsMM.GetAnPools: Tdbpool;
+var
+  i: Integer;
+begin
+  Result := nil;
+  Flock.Enter;
+  try
+    for i := 0 to FLst.Count - 1 do begin
+      if Tdbpool(FLst.Objects[i]).Isused = False then begin
+        Result := Tdbpool(FLst.Objects[i]);
+        Break;
+      end;
+    end;
+  finally
+    Flock.Release;
+  end;
+  if Result = nil then begin
+    Result := Tdbpool.Create;
+    Result.id := FLst.AddObject('', Result);
+  end;
+  Result.Isused := True;
 end;
 
 end.

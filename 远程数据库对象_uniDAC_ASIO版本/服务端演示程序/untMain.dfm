@@ -18,8 +18,8 @@ object frm_main: Tfrm_main
   object lvLog: TListView
     Left = 0
     Top = 0
-    Width = 566
-    Height = 382
+    Width = 574
+    Height = 386
     Align = alClient
     BevelInner = bvNone
     BevelOuter = bvNone

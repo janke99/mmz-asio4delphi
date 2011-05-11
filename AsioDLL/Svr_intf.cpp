@@ -77,7 +77,7 @@ public:
   }
 
   void start()
-  {
+  {	  
     socket_.async_read_some(boost::asio::buffer(data_, max_length),
         boost::bind(&session::handle_read, this,
           boost::asio::placeholders::error,
@@ -90,17 +90,34 @@ public:
   //  std::cout << "read some len:" << bytes_transferred <<  "\n" ; 
     if (!error)
     {
-		
-		if(Callback_readdata!=NULL)
+	
+	  try
 	  {
-		 Callback_readdata(data_,bytes_transferred, userdata,&readlen);
-		 
+	  if(Callback_readdata!=NULL)
+	  {
+		 Callback_readdata(data_,bytes_transferred, userdata,&readlen);		 
 
-	  }	
+	  }
+	  }
+	  catch(...)
+	  {
+	  }
+
+	  if(userdata!=0)
+	  {
       socket_.async_read_some(boost::asio::buffer(data_, max_length),
           boost::bind(&session::handle_read, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
+	  }
+	  else{
+	    socket_.close();
+		 if(Callback_DisConn!=NULL)
+		{
+		  Callback_DisConn(userdata);
+		}
+	    delete this;
+	  }
     }
     else
     {
@@ -112,7 +129,7 @@ public:
 		  Callback_DisConn(userdata);
 	  }
 	  
-     // delete this;
+       delete this;
     }
   }
 
@@ -129,12 +146,14 @@ public:
     }
     else
     {
+	  socket_.close();	
 	  if(Callback_DisConn!=NULL)
 	  {
 		 Callback_DisConn(userdata);
 	  }
-     // delete this;
-	  socket_.close();
+    
+	 
+	   delete this;
     }
   }
 
@@ -191,22 +210,22 @@ public:
 	 
 		  new_session->start();
 		  new_session = new session(io_service_);	
-		  //删除超时的sesson
-		  int i;
-		  for (deadlist_Iter=deadlist.begin(); deadlist_Iter !=deadlist.end(); ++deadlist_Iter)
-			{
-				i= (*deadlist_Iter)->deadtime;
-				i=GetTickCount() -i;
-			 
-				if ( i > 3000)
-				{
-				       //用pos2来保存pos指针
-				  deadlist_Iter2=deadlist_Iter;
-				  deadlist_Iter++;
-				  deadlist.erase(deadlist_Iter2);
-				  delete (*deadlist_Iter);
-				 }
-			}
+		 // //删除超时的sesson
+		 // int i;
+		 // for (deadlist_Iter=deadlist.begin(); deadlist_Iter !=deadlist.end(); ++deadlist_Iter)
+			//{
+			//	i= (*deadlist_Iter)->deadtime;
+			//	i=GetTickCount() -i;
+			// 
+			//	if ( i > 3000)
+			//	{
+			//	       //用pos2来保存pos指针
+			//	  deadlist_Iter2=deadlist_Iter;
+			//	  deadlist_Iter++;
+			//	  deadlist.erase(deadlist_Iter2);
+			//	  delete (*deadlist_Iter);
+			//	 }
+			//}
 
 	  }
       acceptor_.async_accept(new_session->socket(),
@@ -340,11 +359,10 @@ DllExport int Asio_senddata(int ikind,int isocket,char * ibuff,int ilen)
 DllExport int Asio_closesocket(session * isocket)
 {
 	isocket->userdata=0;//不允许再触发
-	isocket->deadtime=GetTickCount();
-	isocket->socket().close();	
-	EnterCriticalSection(&criCounter);
-	deadlist.push_back(isocket);
-	LeaveCriticalSection(&criCounter);
+	isocket->deadtime=GetTickCount();	
+	//EnterCriticalSection(&criCounter);
+	//deadlist.push_back(isocket);
+	//LeaveCriticalSection(&criCounter);
 
 	//delete isocket;
 	return 0;
