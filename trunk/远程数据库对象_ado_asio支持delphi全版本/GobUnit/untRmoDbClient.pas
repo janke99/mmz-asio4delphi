@@ -112,26 +112,29 @@ function TRmoClient.ConnToSvr(ISvrIP: string;
 begin
   Result := True;
   if (IsConnected = false) or (FHost <> ISvrIP) or (FPort <> ISvrPort) then begin
-    DisConn;
+    if IsConnected then
+      DisConn;
     FHost := ISvrIP;
     FPort := ISvrPort;
     FIsDisConn := False;
-    if not IsConnected then begin
-      try
-        Result := Connto(FHost, FPort);
-      except
+    try
+      Result := Connto(FHost, FPort);
+    except
+      Result := False;
+      FIsDisConn := False;
+    end;
+    if Result = True then begin
+      SendHead(CTSLogin);
+      WriteInteger(CClientID);
+      if ReadInteger <> STCLogined then begin
         Result := False;
-        FIsDisConn := False;
+        FisConning := False;
+        DisConn;
+        Exit;
       end;
-      if Result = True then begin
-        SendHead(CTSLogin);
-        WriteInteger(CClientID);
-        if ReadInteger <> STCLogined then
-          Result := False;
-        FisConning := True;
-        FIsDisConn := False;
-        Ftimer.Enabled := True;
-      end;
+      FisConning := True;
+      FIsDisConn := False;
+      Ftimer.Enabled := True;
     end;
   end;
 end;

@@ -60,7 +60,8 @@ begin
   end;
   if Gob_RmoCtler.ConnToSvr(Edit1.Text, 9951, Edit2.Text, Str_Encry('12345', 'cht')) = false then begin
     ShowMessage('登录服务器失败！');
-    KillTask(ExtractFileName(ParamStr(0)));
+    exit;
+//    KillTask(ExtractFileName(ParamStr(0)));
   end
   else begin
     AddShow('连接服务器成功，请求返回在线用户列表');

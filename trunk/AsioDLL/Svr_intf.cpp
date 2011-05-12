@@ -303,7 +303,13 @@ DllExport int Asio_SvrRun()
 	{
 		s=new server(io_service,gport);
 	}
+	try
+	{
 	io_service.run();
+	}
+	catch(...)
+	{
+	}
 	delete s;
 	
 	if(gport==0){ 
@@ -358,8 +364,14 @@ DllExport int Asio_senddata(int ikind,int isocket,char * ibuff,int ilen)
 
 DllExport int Asio_closesocket(session * isocket)
 {
-	isocket->userdata=0;//不允许再触发
+	//isocket->userdata=0;//不允许再触发
+	try
+	{
 	isocket->deadtime=GetTickCount();	
+	isocket->socket().cancel();
+	}
+	catch(...)
+	{}
 	//EnterCriticalSection(&criCounter);
 	//deadlist.push_back(isocket);
 	//LeaveCriticalSection(&criCounter);
@@ -400,9 +412,17 @@ DllExport int Asio_Client_conntosvr(session * isocket,char* iip,int iport,int iu
 
 DllExport int Asio_Client_DisConn(session * isocket)
 {
-	isocket->userdata=0;//不允许再触发
-	isocket->deadtime=GetTickCount();
-	isocket->socket().close();		
+	//isocket->userdata=0;//不允许再触发
+	try
+	{
+		isocket->deadtime=GetTickCount();
+		isocket->socket().cancel();	
+		boost::system::error_code ignored_ec;  
+		isocket->socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);	
+	}
+	catch(...)
+	{
+	}
 	return 0;	
 }
 

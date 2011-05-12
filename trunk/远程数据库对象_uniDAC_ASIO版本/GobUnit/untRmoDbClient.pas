@@ -214,36 +214,36 @@ var
 begin
   Result := True;
   if (IsConnected = false) or (FHost <> ISvrIP) or (FPort <> ISvrPort) then begin
-    DisConn;
+    if IsConnected then
+      DisConn;
     FHost := ISvrIP;
     FPort := ISvrPort;
     Facc := Iacc;
     Fpsd := iPsd;
     FIsDisConn := False;
-    if not IsConnected then begin
-      try
-        Result := Connto(FHost, FPort);
-      except
-        Result := False;
-        FIsDisConn := False;
-      end;
-      if Result = True then begin
+    try
+      Result := Connto(FHost, FPort);
+    except
+      Result := False;
+      FIsDisConn := False;
+    end;
+    if Result = True then begin
 //        SendHead(CTSLogin);
 //        WriteInteger(CClientID);
 //        if ReadInteger <> STCLogined then
 //          Result := False;
-        ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'rmo')]);
-        Writeinteger(Length(ls));
-        Write(ls);
-        if ReadInteger <> STCLogined then begin
-          Result := False;
-          DisConn;
-          Exit;
-        end;
-        FisConning := True;
-        FIsDisConn := False;
-        Ftimer.Enabled := True;
+      ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'rmo')]);
+      Writeinteger(Length(ls));
+      Write(ls);
+      if ReadInteger <> STCLogined then begin
+        Result := False;
+        DisConn;
+        FisConning := false;
+        Exit;
       end;
+      FisConning := True;
+      FIsDisConn := False;
+      Ftimer.Enabled := True;
     end;
   end;
 end;
