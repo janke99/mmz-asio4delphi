@@ -121,36 +121,38 @@ var
   ls: ansistring;
 begin
   Result := True;
-  if (IsConnected = false) or (FHost <> ISvrIP) or (FPort <> ISvrPort) then begin
-    DisConn;
+  if (FisConning = false) or (FHost <> ISvrIP) or (FPort <> ISvrPort) then begin
+   // DisConn;
     FHost := ISvrIP;
     FPort := ISvrPort;
     Facc := Iacc;
     Fpsd := iPsd;
     FIsDisConn := False;
-    if not IsConnected then begin
-      try
-        Result := Connto(FHost, FPort);
-      except
-        Result := False;
-        FIsDisConn := False;
-      end;
-      if Result = True then begin
+
+    try
+      Result := Connto(FHost, FPort);
+    except
+      Result := False;
+      FIsDisConn := False;
+    end;
+    if Result = True then begin
 //        SendHead(CTSLogin);
 //        WriteInteger(CClientID);
 //        if ReadInteger <> STCLogined then
 //          Result := False;
-        ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'cht')]);
-        Writeinteger(Length(ls));
-        Write(ls);
-        if ReadInteger <> STCLogined then begin
-          Result := False;
-          Exit;
-        end;
-        FisConning := True;
-        FIsDisConn := False;
-        Ftimer.Enabled := True;
+      ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'cht')]);
+      Writeinteger(Length(ls));
+      Write(ls);
+      if ReadInteger <> STCLogined then begin
+        Result := False;
+        DisConn;
+        FisConning := False;
+        Exit;
       end;
+      FisConning := True;
+      FIsDisConn := False;
+      Ftimer.Enabled := True;
+
     end;
   end;
 end;
@@ -158,10 +160,11 @@ end;
 procedure TchatClient.DisConn;
 begin
   try
-    if IsConnected then
-      DisConn;
+//    if IsConnected then
+    CloseConn;
   except
   end;
+  FisConning := False;
   FIsDisConn := True;
 end;
 

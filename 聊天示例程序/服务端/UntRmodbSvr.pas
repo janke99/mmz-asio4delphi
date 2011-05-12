@@ -269,7 +269,10 @@ end;
 
 procedure TchatSvr.OnDisConn(ClientThread: TAsioClient);
 begin
-  BroCastUserChange(2, ClientThread);
+  if ClientThread.userdata <> nil then begin
+    BroCastUserChange(2, ClientThread);
+    Tuserinfo(ClientThread.userdata).Free;
+  end;
   inherited;
 end;
 

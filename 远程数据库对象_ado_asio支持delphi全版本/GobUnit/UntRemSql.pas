@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, SysUtils, ADODB, Forms, Windows, DB,
-  untRmoDbClient, pmybasedebug;
+  untRmoDbClient;
 
 
 type
@@ -58,7 +58,7 @@ uses winsock, untFunctions;
 
 
 
-function HostToIP(IName:  ansistring; var IIp: ansistring): Boolean;
+function HostToIP(IName: ansistring; var IIp: ansistring): Boolean;
 var
   wsdata: TWSAData;
   hostName: array[0..255] of AnsiChar;

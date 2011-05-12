@@ -138,7 +138,7 @@ begin
         ClientThread.ConnState := Casio_State_DisConn;
         try
 //          Socket.DisConn(ClientThread);
-//        ClientThread.Socket.Disconnect;
+         ClientThread.Socket.Disconnect;
         except
 
         end;

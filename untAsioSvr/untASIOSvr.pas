@@ -460,6 +460,7 @@ begin
   //asio服务端连接中断
   if iuserdata > 0 then begin
     Lci := TAsioClient(iuserdata);
+    Lci.Socketptr := 0;
     Lci.FisConning := False;
     if Lci.DeadTime > 0 then Exit;
     GIntAsioTCP.Flock.Acquire;
@@ -505,7 +506,7 @@ begin
     end;
     //同时可以判断长时间没有心跳的连接
     for i := FClientLst.Count - 1 downto 0 do begin
-      if  (GetTickCount - TAsioClient(FClientLst.Objects[i]).LiveTime > FNoliveTimeOut) then begin
+      if (GetTickCount - TAsioClient(FClientLst.Objects[i]).LiveTime > FNoliveTimeOut) then begin
         try
           if TAsioClient(FClientLst.Objects[i]).Socketptr > 0 then begin
             Asio_closesocket(TAsioClient(FClientLst.Objects[i]).Socketptr);
@@ -882,8 +883,10 @@ end;
 function TAsioClient.CloseConn: Boolean;
 begin
   Result := false;
-  if Socketptr > 0 then
+  if Socketptr > 0 then begin
     Result := Asio_Client_DisConn(Socketptr) = 1;
+    Socketptr := 0;
+  end;
 end;
 
 function TAsioClient.ConnToSvr(Iip: ansistring; Iport: Word): Boolean;
