@@ -549,6 +549,8 @@ begin
           FSqlPart1 := 'insert into ' + FtableName + '(';
           FSqlPart2 := '';
           for i := n to count - 1 do begin
+            if (fields[i].IsNull) or (trim(fields[i].AsString) = '') then
+              continue;
             //如果有blob字段则跳过
             if Fields[i].DataType in [ftBlob] then begin
               LblobStream := TMemoryStream.Create;
@@ -571,8 +573,9 @@ begin
             case Fields[i].DataType of
               ftCurrency, ftBCD, ftWord, ftFloat, ftBytes: FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + ifthen(Fields[i].AsString = '', '0', Fields[i].AsString);
               ftBoolean, ftSmallint, ftInteger: FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + IntToStr(Fields[i].AsInteger);
-            else
-              FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + '''' + Fields[i].AsString + '''';
+              ftDate, ftDateTime: if Fields[i].AsString = '' then FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + 'null' else
+                  FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + '''' + Fields[i].AsString + '''' // Modified by qnaqbgss 2010/9/11 17:56:49
+              else FSqlPart2 := FSqlPart2 + ifthen(i = n, '', ',') + '''' + Fields[i].AsString + '''';
             end;
           end;
           Result := FSqlPart1 + ') values (' + FSqlPart2 + ')';
@@ -587,6 +590,8 @@ begin
               lvalue := Fields[i].AsString;
               Continue;
             end;
+//            if (fields[i].IsNull) or (trim(fields[i].AsString) = '') then
+//              continue;
              //如果有blob字段则跳过
             if Fields[i].DataType in [ftBlob] then begin
               LblobStream := TMemoryStream.Create;
@@ -607,8 +612,11 @@ begin
               ftCurrency, ftBCD, ftWord: Result := Result + Fields[i].AsString;
               ftFloat: Result := Result + Fields[i].AsString;
               ftBytes, ftSmallint, ftInteger: Result := Result + IntToStr(Fields[i].AsInteger);
-            else
-              Result := Result + '''' + Fields[i].AsString + '''';
+              ftBoolean:Result := Result +Booltostr(fields[i].AsBoolean,true);
+              ftDate, ftDateTime: if Fields[i].AsString = '' then result := Result + 'null' else
+                  result := Result + '''' + Fields[i].AsString + '''' // Modified by qnaqbgss 2010/9/11 17:57:14
+              else
+                Result := Result + '''' + Fields[i].AsString + '''';
             end; // case
             if i <> Count - 1 then
               Result := Result + ',';
