@@ -27,7 +27,7 @@ unit untASIOSvr;
 interface
 
 uses
-  Classes, SyncObjs, Graphics;
+  Classes, SyncObjs, Graphics, Contnrs;
 
 const
   Casio_State_Init = 0;
@@ -53,6 +53,7 @@ type
     Fkind: string;
     Fbmp: TBitmap;
     FMem: TMemoryStream;
+    UserPtr: Pointer; //用户指针
     constructor Create();
     destructor Destroy; override;
   end;
@@ -116,7 +117,7 @@ type
     procedure Setstate(const Value: Integer); //数据锁
   public
     CurrPost, ReadPos: integer;
-    FDataLock: TCriticalSection;
+    FDataLock, FSendLock: TCriticalSection;
     Parent: TAsioClient;
     Casestate: integer; //数据处理状态
     llen: Integer;
@@ -124,29 +125,39 @@ type
     Gbuff: array[0..2048] of byte;
     Memory: TMemoryStream;
     WantData: integer;
-    TmpSendbuffer: TPoolItem; //临时发送数据对象
+    SendQeue: TObjectQueue;
     procedure ReLoadData; //重新装载数据 以免缓存太大
     procedure Indata(Idata: pointer; ilen: integer); //数据进入队列
+
+
 //------------------------------------------------------------------------------
 // 这些方法都是服务端时用的  2011-04-14 15:28:27   马敏钊
     function ReadInteger(IrcvGob: Boolean = false; ITrans: Boolean = True): Integer;
     function ReadStr(Ilen: integer; IrcvGob: Boolean = false): AnsiString;
     function ReadBuff(Ibuffer: Pointer; Ilen: integer; IrcvGob: Boolean = false):
       Integer;
+//------------------------------------------------------------------------------
+// 为免乱序，修改为队列式发送，  2011-05-16 17:05:04   马敏钊
+//------------------------------------------------------------------------------
+    procedure PushSendData(Idata: TPoolItem);
+    function GetSendData: TPoolItem;
+    function IshaveSenddata: Boolean;
+
     procedure Writeinteger(Iin: Integer; Ihtn: boolean = true);
     procedure Write(IBuffer: Pointer; Ilen: Integer); overload;
     procedure Write(IStr: AnsiString); overload;
-
 //------------------------------------------------------------------------------
 // 添加临时发送数据处理  2011-05-10 15:56:55   马敏钊
 //------------------------------------------------------------------------------
    //申请临时对象
-    procedure BeginMakeData;
-    procedure MakeData_Writeinteger(Iin: Integer; Ihtn: boolean = true);
-    procedure MakeData_Write(IBuffer: Pointer; Ilen: Integer); overload;
-    procedure MakeData_Write(IStr: AnsiString); overload;
+    function BeginMakeData: TPoolItem;
+    procedure MakeData_Writeinteger(ISendData: TPoolItem; Iin: Integer; Ihtn: boolean
+      = true);
+    procedure MakeData_Write(ISendData: TPoolItem; IBuffer: Pointer; Ilen: Integer);
+      overload;
+    procedure MakeData_Write(ISendData: TPoolItem; IStr: AnsiString); overload;
    //结束并发送
-    procedure EndMakeData;
+    procedure EndMakeData(ISendData: TPoolItem);
 
 
     {断开连接}
@@ -435,6 +446,7 @@ end;
 procedure Asio_writeDataCallback(Iuserdata, iuser2: integer); stdcall;
 var
   Lci: TAsioClient;
+  ldata: TPoolItem;
 begin
   //asio服务端接收到数据
   if Iuserdata > 0 then begin
@@ -442,9 +454,21 @@ begin
     try
       Lci := TAsioClient(Iuserdata);
       Lci.LiveTime := GetTickCount;
-      Lci.SendCount := Lci.SendCount + TPoolItem(iuser2).FMem.Position;
-      Lci.MemPool.BackBuff(TPoolItem(iuser2));
-      InterlockedDecrement(Lci.SendRef);
+      ldata := TPoolItem(iuser2);
+      Lci.SendCount := Lci.SendCount + ldata.FMem.Position;
+      Lci.MemPool.BackBuff(ldata);
+      Lci.RcvDataBuffer.FSendLock.Acquire;
+      try
+        Dec(Lci.SendRef);
+      //判断是否缓存队列中有需要发送的
+        if Lci.RcvDataBuffer.IshaveSenddata then begin
+          ldata := Lci.RcvDataBuffer.GetSendData;
+          Asio_senddata(integer(ldata), Lci.Socketptr, ldata.FMem.Memory, ldata.FMem.Position);
+          Inc(Lci.SendRef);
+        end;
+      finally
+        Lci.RcvDataBuffer.FSendLock.Release;
+      end;
       if Assigned(GIntAsioTCP.FOnClientRecvData) then
         GIntAsioTCP.FonClientSendData(Lci, nil, TPoolItem(iuser2).FMem.Position);
     except
@@ -599,19 +623,22 @@ end;
 
 { TDataCase }
 
-procedure TAsioDataBuffer.BeginMakeData;
+function TAsioDataBuffer.BeginMakeData: TPoolItem;
 begin
-  TmpSendbuffer := Parent.MemPool.GetBuff(CMemPool_FreeMem);
+  Result := Parent.MemPool.GetBuff(CMemPool_FreeMem);
+  Result.FMem.Position := 0;
 end;
 
 constructor TAsioDataBuffer.Create;
 begin
   FDataLock := TCriticalSection.Create;
+  FSendLock := TCriticalSection.Create;
   Memory := TMemoryStream.Create;
   CurrPost := 0;
   State := CdataRcv_State_head;
   headCount := 0;
   WantData := 8;
+  SendQeue := TObjectQueue.Create;
 end;
 
 destructor TAsioDataBuffer.Destroy;
@@ -621,8 +648,10 @@ begin
      // Asio_closesocket(Parent.Socketptr);
       Parent.Socketptr := 0;
     end;
+    SendQeue.Free;
   except
   end;
+  FSendLock.Free;
   FDataLock.Free;
   Memory.Free;
   inherited;
@@ -648,14 +677,19 @@ begin
   ReLoadData;
 end;
 
-procedure TAsioDataBuffer.EndMakeData;
+procedure TAsioDataBuffer.EndMakeData(ISendData: TPoolItem);
 begin
-  Parent.SendData(TmpSendbuffer);
+  Parent.SendData(ISendData);
 end;
 
 function TAsioDataBuffer.GetCanUseSize: Integer;
 begin
   Result := Memory.Position - CurrPost;
+end;
+
+function TAsioDataBuffer.GetSendData: TPoolItem;
+begin
+  Result := TPoolItem(SendQeue.Pop);
 end;
 
 procedure TAsioDataBuffer.Indata(Idata: pointer; ilen: integer);
@@ -687,25 +721,46 @@ begin
  // end;
 end;
 
-procedure TAsioDataBuffer.MakeData_Write(IBuffer: Pointer; Ilen: Integer);
+procedure TAsioDataBuffer.MakeData_Write(ISendData: TPoolItem; IBuffer: Pointer;
+  Ilen: Integer);
 begin
-  TmpSendbuffer.FMem.WriteBuffer(IBuffer^, Ilen);
+  ISendData.FMem.WriteBuffer(IBuffer^, Ilen);
 end;
 
-procedure TAsioDataBuffer.MakeData_Write(IStr: AnsiString);
+function TAsioDataBuffer.IshaveSenddata: Boolean;
+begin
+//  FSendLock.Acquire;
+//  try
+  Result := SendQeue.Count > 0;
+//  finally
+//    FSendLock.Release;
+//  end;
+end;
+
+procedure TAsioDataBuffer.MakeData_Write(ISendData: TPoolItem; IStr: AnsiString);
 var
   i: Integer;
 begin
   i := length(IStr);
-  TmpSendbuffer.FMem.WriteBuffer(IStr[1], i);
+  ISendData.FMem.WriteBuffer(IStr[1], i);
 end;
 
-procedure TAsioDataBuffer.MakeData_Writeinteger(Iin: Integer;
-  Ihtn: boolean);
+procedure TAsioDataBuffer.MakeData_Writeinteger(ISendData: TPoolItem; Iin:
+  Integer; Ihtn: boolean = true);
 begin
   if Ihtn then
     Iin := htonl(Iin);
-  TmpSendbuffer.FMem.WriteBuffer(iin, 4);
+  ISendData.FMem.WriteBuffer(iin, 4);
+end;
+
+procedure TAsioDataBuffer.PushSendData(Idata: TPoolItem);
+begin
+//  FSendLock.Acquire;
+//  try
+  SendQeue.Push(Idata);
+//  finally
+//    FSendLock.Release;
+//  end;
 end;
 
 function TAsioDataBuffer.ReadBuff(Ibuffer: Pointer; Ilen: integer; IrcvGob:
@@ -999,8 +1054,20 @@ end;
 
 procedure TAsioClient.SendData(Idata: TPoolItem);
 begin
-  Asio_senddata(integer(Idata), Socketptr, Idata.FMem.Memory, Idata.FMem.Position);
-  InterlockedIncrement(SendRef);
+  //如果 已经投递发送请求，则压到发送队列中
+  RcvDataBuffer.FSendLock.Acquire;
+  try
+    if SendRef > 0 then begin
+      Idata.UserPtr := Parent;
+      RcvDataBuffer.PushSendData(Idata);
+    end
+    else begin //直接投递
+      Asio_senddata(integer(Idata), Socketptr, Idata.FMem.Memory, Idata.FMem.Position);
+      Inc(SendRef);
+    end;
+  finally
+    RcvDataBuffer.FSendLock.Release;
+  end;
 end;
 
 
