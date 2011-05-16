@@ -62,7 +62,7 @@ end;
 procedure Tview_Main.btn1Click(Sender: TObject);
 begin
   if Gob_RmoCtler = nil then begin
-    Gob_RmoCtler := TchatClient.Create;
+    Gob_RmoCtler := TfileClient.Create;
   end;
   if Gob_RmoCtler.ConnToSvr(Edit1.Text, 9951, Edit2.Text, Str_Encry('12345', 'cht')) = false then begin
     ShowMessage('登录服务器失败！');
@@ -175,6 +175,9 @@ begin
               view_FileMM.FMissonlst.Delete(llen);
           end;
         end;
+      end
+      else begin
+        DeBug('异常数据，客户端解析数据包是发现不认识的数据头');
       end;
     end;
   end;

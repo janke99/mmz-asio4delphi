@@ -37,7 +37,7 @@ type
 
 
 
-  TchatClient = class(TSocketClient)
+  TfileClient = class(TSocketClient)
   private
     gLmemStream: TMemoryStream;
     FCachSQllst, FsqlLst: TStrings; //用来记录已经打开了的数据集 以及对于的语句
@@ -88,13 +88,13 @@ type
 
   TConnthread = class(TThread)
   public
-    Client: TchatClient;
+    Client: TfileClient;
     procedure execute; override;
   end;
 
 var
   //远程连接控制对象
-  Gob_RmoCtler: TchatClient;
+  Gob_RmoCtler: TfileClient;
   GCurrVer: integer = 1; //当前程序升级版本号
 
 implementation
@@ -103,7 +103,7 @@ uses untfunctions, sysUtils, UntBaseProctol, IniFiles, ADOInt, Variants,
   Windows, untASIOSvr, Math;
 
 
-procedure TchatClient.checkLive;
+procedure TfileClient.checkLive;
 begin
   try
     if IsConnected then begin
@@ -124,7 +124,7 @@ begin
   end;
 end;
 
-function TchatClient.ConnToSvr(ISvrIP: ansistring; ISvrPort: Integer = 9988;
+function TfileClient.ConnToSvr(ISvrIP: ansistring; ISvrPort: Integer = 9988;
   Iacc: ansistring = ''; iPsd: ansistring = ''): boolean;
 var
   i: Integer;
@@ -167,7 +167,7 @@ begin
   end;
 end;
 
-procedure TchatClient.DisConn;
+procedure TfileClient.DisConn;
 begin
   try
 //    if IsConnected then
@@ -193,7 +193,7 @@ end;
 
 
 
-procedure TchatClient.GetsvrFilelist;
+procedure TfileClient.GetsvrFilelist;
 begin
   if Gob_RmoCtler.IsConning then begin
     Flock.Enter;
@@ -206,7 +206,7 @@ begin
   end;
 end;
 
-procedure TchatClient.Getonlineuser;
+procedure TfileClient.Getonlineuser;
 begin
   if Gob_RmoCtler.IsConning then begin
     Flock.Enter;
@@ -219,7 +219,7 @@ begin
   end;
 end;
 
-procedure TchatClient.OnCheck(Sender: TObject);
+procedure TfileClient.OnCheck(Sender: TObject);
 begin
   if TTimer(sender).tag = 0 then begin
     if ((IsConnected = false) or (FisConning = false)) and (FIsDisConn = false) then begin
@@ -236,7 +236,7 @@ begin
   end;
 end;
 
-procedure TchatClient.OnCreate;
+procedure TfileClient.OnCreate;
 begin
   inherited;
   Flock := TCriticalSection.Create;
@@ -253,7 +253,7 @@ begin
   gLmemStream := TMemoryStream.Create;
 end;
 
-procedure TchatClient.OnDestory;
+procedure TfileClient.OnDestory;
 begin
   inherited;
   FCachSQllst.Free;
@@ -263,7 +263,7 @@ begin
   Flock.Free;
 end;
 
-function TchatClient.ReConn(ISvrIP: ansistring; IPort: Integer = -1; Iacc: ansistring = '';
+function TfileClient.ReConn(ISvrIP: ansistring; IPort: Integer = -1; Iacc: ansistring = '';
   iPsd: ansistring = ''): boolean;
 begin
   Result := False;
@@ -272,7 +272,7 @@ begin
   end;
 end;
 
-procedure TchatClient.SaySome(itoWho: string; IContent: string);
+procedure TfileClient.SaySome(itoWho: string; IContent: string);
 var
   llen: integer;
   lls: string;
@@ -292,7 +292,7 @@ begin
   end;
 end;
 
-procedure TchatClient.GetFileID(IFile: string);
+procedure TfileClient.GetFileID(IFile: string);
 var
   llen: integer;
 begin
@@ -308,7 +308,7 @@ begin
   end;
 end;
 
-procedure TchatClient.TransFile(IMisson: TFileMisson);
+procedure TfileClient.TransFile(IMisson: TFileMisson);
 var
   llen: integer;
 begin
