@@ -72,9 +72,9 @@ begin
   else begin
     AddShow('连接服务器成功，请求返回在线用户列表,以及服务端文件列表');
     tmr_getlst.Enabled := true;
-    tmr_rcv.Enabled := True;
     btn1.Enabled := false;
     Edit2.Enabled := False;
+    tmr_rcv.Enabled := True;
   end;
 end;
 
@@ -161,11 +161,11 @@ begin
           Inc(lfileinfo.Transrd.RangeStart, lrdbuff.len);
           if lrdbuff.RangeStart < lfileinfo.FileSize then begin
             Gob_RmoCtler.TransFile(lfileinfo);
-            lfileinfo.Info.SubItems[3] := IntToStr(lfileinfo.Transrd.RangeStart * 100 div lfileinfo.FileSize) + '%'; //显示进度
+            lfileinfo.Info.SubItems[2] := IntToStr(lfileinfo.Transrd.RangeStart * 100 div lfileinfo.FileSize) + '%'; //显示进度
             lfileinfo.Info.SubItems[1] := '下载中';
           end
           else begin
-            lfileinfo.Info.SubItems[3] := '100%'; //显示进度
+            lfileinfo.Info.SubItems[2] := '100%'; //显示进度
             lfileinfo.Info.SubItems[0] := '本地';
             lfileinfo.Info.SubItems[1] := '已完成';
             lfileinfo.FileStream.Free;

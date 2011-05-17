@@ -203,6 +203,7 @@ end;
 procedure Tview_main.tmr1Timer(Sender: TObject);
 begin
   try
+    lbl_Sendtot.Caption := GechoSvr.ShowBytes(GechoSvr.GSendTot);
     lbl_ClientMemtot.Caption := GechoSvr.ShowBytes(GechoSvr.GetClientMem);
     lbl_SendBuff.Caption := GechoSvr.ShowBytes(GechoSvr.GetSendBuffMem);
 //    if GAsioTCP.FClientLst.Count > 0 then

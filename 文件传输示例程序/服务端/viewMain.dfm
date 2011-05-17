@@ -19,8 +19,9 @@ object view_Main: Tview_Main
     Left = 0
     Top = 0
     Width = 472
-    Height = 382
+    Height = 389
     Align = alClient
+    ImeName = 'Chinese (Simplified) - US Keyboard'
     TabOrder = 0
   end
 end

@@ -20,7 +20,6 @@ type
     CheckBox1: TCheckBox;
     lbl_conn: TLabel;
     Timer1: TTimer;
-    btn1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);

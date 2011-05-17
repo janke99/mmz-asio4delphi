@@ -131,6 +131,7 @@ type
     Memory: TMemoryStream;
     WantData: integer;
     SendQeue: TObjectQueue;
+    Writedata, SendData, Data1, data2: TMemoryStream;
     procedure ReLoadData; //重新装载数据 以免缓存太大
     procedure Indata(Idata: pointer; ilen: integer); //数据进入队列
 
@@ -169,7 +170,11 @@ type
     procedure Disconnect;
 //------------------------------------------------------------------------------
 
+    //获取可以读取的大小
     function GetCanUseSize: Integer;
+
+    //发送双缓冲进行数据交换
+    procedure ChangeSendDataBuffer;
 
 
 
@@ -205,7 +210,8 @@ type
     ConnState: Integer; //客户端状态
     userdata: Pointer; //预留的数据指针
     {服务端时用的发送函数}
-    procedure SendData(Idata: TPoolItem);
+    procedure SendData(Idata: TPoolItem); overload;
+    procedure SendData; overload;
 
 
     {创建一个ASIO对象}
@@ -451,7 +457,7 @@ end;
 procedure Asio_writeDataCallback(Iuserdata, iuser2: integer); stdcall;
 var
   Lci: TAsioClient;
-  ldata: TPoolItem;
+  ldata: TMemoryStream;
 begin
   //asio服务端接收到数据
   if Iuserdata > 0 then begin
@@ -459,17 +465,20 @@ begin
     try
       Lci := TAsioClient(Iuserdata);
       Lci.LiveTime := GetTickCount;
-      ldata := TPoolItem(iuser2);
-      Lci.SendCount := Lci.SendCount + ldata.FMem.Position;
-      Lci.MemPool.BackBuff(ldata);
+//      ldata := TPoolItem(iuser2);
+      ldata := TMemoryStream(iuser2);
+      Lci.SendCount := Lci.SendCount + ldata.Position;
+//      Lci.MemPool.BackBuff(ldata);
       Lci.RcvDataBuffer.FSendLock.Acquire;
+      Dec(Lci.SendRef);
       try
-        Dec(Lci.SendRef);
+
       //判断是否缓存队列中有需要发送的
         if Lci.RcvDataBuffer.IshaveSenddata then begin
-          ldata := Lci.RcvDataBuffer.GetSendData;
-          Asio_senddata(integer(ldata), Lci.Socketptr, ldata.FMem.Memory, ldata.FMem.Position);
-          Inc(Lci.SendRef);
+          Lci.SendData;
+//        ldata := Lci.RcvDataBuffer.GetSendData;
+//        Asio_senddata(integer(ldata), Lci.Socketptr, ldata.FMem.Memory, ldata.FMem.Position);
+//        Inc(Lci.SendRef);
         end;
       finally
         Lci.RcvDataBuffer.FSendLock.Release;
@@ -644,10 +653,16 @@ begin
   headCount := 0;
   WantData := 8;
   SendQeue := TObjectQueue.Create;
+  Data1 := TMemoryStream.Create;
+  Data2 := TMemoryStream.Create;
+  SendData := Data1;
+  Writedata := Data1;
 end;
 
 destructor TAsioDataBuffer.Destroy;
 begin
+  Data1.Free;
+  data2.Free;
   try
     if Parent.Socketptr > 0 then begin
      // Asio_closesocket(Parent.Socketptr);
@@ -736,7 +751,7 @@ function TAsioDataBuffer.IshaveSenddata: Boolean;
 begin
 //  FSendLock.Acquire;
 //  try
-  Result := SendQeue.Count > 0;
+  Result := Writedata.Position > 0;
 //  finally
 //    FSendLock.Release;
 //  end;
@@ -911,6 +926,7 @@ procedure TWorkThread.Execute;
 var
   Lbuff: TAsioClient;
   Lindex: Integer;
+  ldata: TPoolItem;
 begin
   FreeOnTerminate := True;
   Lindex := 0;
@@ -928,6 +944,17 @@ begin
             if (Lbuff.RcvDataBuffer.Memory.Position - Lbuff.RcvDataBuffer.CurrPost >= Lbuff.RcvDataBuffer.WantData) then
               Lbuff.isInCaseList := True;
         end;
+//        if Lbuff.DeadTime = 0 then begin
+//          if (Lbuff.RcvDataBuffer.IshaveSenddata) and (Lbuff.SendRef = 0) then begin
+////            Lbuff.RcvDataBuffer.FSendLock.Acquire;
+////            try
+//            ldata := Lbuff.RcvDataBuffer.GetSendData;
+//            Lbuff.SendData(ldata);
+////            finally
+////              Lbuff.RcvDataBuffer.FSendLock.Acquire;
+////            end;
+//          end;
+//        end;
       end;
       Inc(Lindex);
     until Lindex >= Parent.GAsioTCP.FClientLst.Count;
@@ -1059,15 +1086,26 @@ end;
 
 procedure TAsioClient.SendData(Idata: TPoolItem);
 begin
+//  Asio_Client_senddata(Socketptr, Idata.FMem.Memory, Idata.FMem.Position);
+//  LiveTime := GetTickCount;
+//  SendCount := SendCount + Idata.FMem.Position;
+//  MemPool.BackBuff(Idata);
+//  Exit;
   //如果 已经投递发送请求，则压到发送队列中
   RcvDataBuffer.FSendLock.Acquire;
   try
     if SendRef > 0 then begin
-      Idata.UserPtr := Parent;
-      RcvDataBuffer.PushSendData(Idata);
+      Idata.UserPtr := self;
+      RcvDataBuffer.Writedata.WriteBuffer(Idata.FMem.Memory^, Idata.FMem.Position);
+      MemPool.BackBuff(Idata);
     end
-    else begin //直接投递
-      Asio_senddata(integer(Idata), Socketptr, Idata.FMem.Memory, Idata.FMem.Position);
+    else begin //可以投递
+      RcvDataBuffer.Writedata.WriteBuffer(Idata.FMem.Memory^, Idata.FMem.Position);
+      MemPool.BackBuff(Idata);
+     // Asio_senddata(integer(Idata), Socketptr, Idata.FMem.Memory, Idata.FMem.Position);
+      RcvDataBuffer.ChangeSendDataBuffer; //转换写发缓存
+      Asio_senddata(integer(RcvDataBuffer.SendData), Socketptr, RcvDataBuffer.SendData.Memory,
+        RcvDataBuffer.SendData.Position);
       Inc(SendRef);
     end;
   finally
@@ -1111,6 +1149,20 @@ begin
   end
   else
     Result := i;
+//  end;
+end;
+
+procedure TAsioClient.SendData;
+begin
+  //如果 已经投递发送请求，则压到发送队列中
+//  RcvDataBuffer.FSendLock.Acquire;
+//  try
+  RcvDataBuffer.ChangeSendDataBuffer; //转换写发缓存
+  Asio_senddata(integer(RcvDataBuffer.SendData), Socketptr, RcvDataBuffer.SendData.Memory,
+    RcvDataBuffer.SendData.Position);
+  Inc(SendRef);
+//  finally
+//    RcvDataBuffer.FSendLock.Release;
 //  end;
 end;
 
@@ -1211,7 +1263,13 @@ var
 begin
 //  i := FObjs.IndexOfObject(Iobj);
 //  if i > -1 then
+//  Flock.Acquire;
+//  try
   Iobj.FisUse := false;
+//  finally
+//    Flock.Release;
+//  end;
+
 //  else
 //    ExceptTip('数据池回归时发现有不存在的对象回归！');
 end;
@@ -1354,6 +1412,25 @@ begin
 end;
 
 
+
+procedure TAsioDataBuffer.ChangeSendDataBuffer;
+begin
+//  FSendLock.Acquire;
+//  try
+
+  if Writedata = Data1 then begin
+    Writedata := data2;
+    SendData := data1;
+  end
+  else begin
+    Writedata := Data1;
+    SendData := data2;
+  end;
+  Writedata.Position := 0;
+//  finally
+//    FSendLock.Release;
+//  end;
+end;
 
 initialization
 
