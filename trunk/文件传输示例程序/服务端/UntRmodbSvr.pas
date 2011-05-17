@@ -143,6 +143,7 @@ var
   lspit: TStrings;
   lRFrd: RfileTrans;
   lfileinfo: TFileidinfo;
+  ldata: TPoolItem;
 
 begin
   Result := true;
@@ -155,6 +156,12 @@ begin
           ls := Getonlineuser;
           Llen := length(ls);
           if Llen > 0 then begin
+//            ldata := ClientThread.Socket.BeginMakeData;
+//            ClientThread.Socket.MakeData_Writeinteger(ldata, 1);
+//            ClientThread.Socket.MakeData_Writeinteger(ldata, llen);
+//            ClientThread.Socket.MakeData_Write(ldata, ls);
+//            ClientThread.Socket.EndMakeData(ldata);
+
             ClientThread.Socket.Writeinteger(1);
             ClientThread.Socket.Writeinteger(Llen);
             ClientThread.Socket.Write(ls);

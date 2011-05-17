@@ -23,7 +23,7 @@ var
 implementation
 
 uses
-  UntTIO;
+  UntTIO, untfunctions;
 
 {$R *.dfm}
 var
@@ -32,7 +32,7 @@ var
 procedure Tview_Main.FormCreate(Sender: TObject);
 begin
   Gio := TIOer.Create(Memo1);
-  ForceDirectories(GetCurrentDir + 'upload\');
+  ForceDirectories(GetCurrPath + 'upload\');
   Gob_Filesvr := TFileSvr.Create(9951, Gio);
   Gio.AddShow('聊天服务端演示程序...');
 end;

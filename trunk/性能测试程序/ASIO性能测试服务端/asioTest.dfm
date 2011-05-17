@@ -48,12 +48,14 @@ object view_main: Tview_main
     Width = 108
     Height = 12
     Caption = #24403#21069#21457#36865#25968#25454#24635#25968#65306
+    Visible = False
   end
   object lbl_Sendtot: TLabel
     Left = 160
     Top = 80
     Width = 6
     Height = 12
+    Visible = False
   end
   object Label4: TLabel
     Left = 32

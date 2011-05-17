@@ -25,7 +25,7 @@ object ASIO_test: TASIO_test
     Left = 0
     Top = 73
     Width = 327
-    Height = 451
+    Height = 458
     Align = alClient
     ImeName = 'Chinese (Simplified) - US Keyboard'
     ItemHeight = 12
@@ -96,20 +96,12 @@ object ASIO_test: TASIO_test
       Caption = #25171#21360#20449#24687
       TabOrder = 3
     end
-    object btn1: TButton
-      Left = 24
-      Top = 48
-      Width = 75
-      Height = 25
-      Caption = 'btn1'
-      TabOrder = 4
-    end
   end
   object Memo1: TMemo
     Left = 0
     Top = 73
     Width = 327
-    Height = 451
+    Height = 458
     Align = alClient
     ImeName = 'Chinese (Simplified) - US Keyboard'
     Lines.Strings = (
