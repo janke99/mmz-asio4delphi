@@ -40,6 +40,7 @@ type
     function ReadStream(Istream: TStream; ClientThread: TAsioClient)
       : TMemoryStream;
   public
+    function GetOnlineuserCount: Integer;
     function Getonlineuser: string; //获取在线用户列表
     procedure BroCastUserChange(ikind: integer; iclient: TAsioClient);
     procedure SendtoInfo(Ifrom, iwho: string; IContent: ansistring); overload;
@@ -101,7 +102,8 @@ begin
               if lspit[0] = 'all' then begin
                 for i := Socket.FClientLst.Count - 1 downto 0 do begin
                   try
-                    SendtoInfo(Tuserinfo(ClientThread.userdata).Name, TAsioClient(Socket.FClientLst.Objects[i]), lspit[1]);
+                    if TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil then
+                      SendtoInfo(Tuserinfo(ClientThread.userdata).Name, TAsioClient(Socket.FClientLst.Objects[i]), lspit[1]);
                   except
                   end;
                 end;
@@ -227,7 +229,7 @@ var
   ls: AnsiString;
 begin
   for i := 0 to Socket.FClientLst.Count - 1 do begin
-    if iwho = Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name then begin
+    if (TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil) and (iwho = Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name) then begin
       TAsioClient(Socket.FClientLst.Objects[i]).Socket.Writeinteger(2);
       ls := Format('%s|%s|%s', [Ifrom, iwho, IContent]);
       llen := length(ls);
@@ -274,6 +276,16 @@ begin
     Tuserinfo(ClientThread.userdata).Free;
   end;
   inherited;
+end;
+
+function TchatSvr.GetOnlineuserCount: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Socket.FClientLst.Count - 1 do
+    if TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil then
+      Inc(Result);
 end;
 
 end.
