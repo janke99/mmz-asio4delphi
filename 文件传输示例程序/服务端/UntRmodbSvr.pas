@@ -60,6 +60,7 @@ type
       : TMemoryStream;
   public
     FFileIDLst: TStrings;
+    function GetOnlineuserCount: Integer;
     function Getonlineuser: string; //获取在线用户列表
     procedure BroCastUserChange(ikind: integer; iclient: TAsioClient);
     procedure SendtoInfo(Ifrom, iwho: string; IContent: ansistring); overload;
@@ -321,7 +322,7 @@ begin
             Result := true;
             BroCastUserChange(1, ClientThread);
             if Shower <> nil then
-              Shower.AddShow('用户:%s，认证通过，成功连接...(在线用户数:%d)', [lspit[0], Socket.FClientLst.Count]);
+              Shower.AddShow('用户:%s，认证通过，成功连接...(在线用户数:%d)', [lspit[0], GetOnlineuserCount]);
           end
           else begin
             if Shower <> nil then
@@ -358,7 +359,7 @@ var
   ls: AnsiString;
 begin
   for i := 0 to Socket.FClientLst.Count - 1 do begin
-    if iwho = Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name then begin
+    if (TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil) and (iwho = Tuserinfo(TAsioClient(Socket.FClientLst.Objects[i]).userdata).Name) then begin
       TAsioClient(Socket.FClientLst.Objects[i]).Socket.Writeinteger(2);
       ls := Format('%s|%s|%s', [Ifrom, iwho, IContent]);
       llen := length(ls);
@@ -420,6 +421,16 @@ destructor TFileidinfo.Destroy;
 begin
   FileStream.Free;
   inherited;
+end;
+
+function TFileSvr.GetOnlineuserCount: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Socket.FClientLst.Count - 1 do
+    if TAsioClient(Socket.FClientLst.Objects[i]).userdata <> nil then
+      Inc(Result);
 end;
 
 end.

@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.1.0
+        当前版本：v1.1.1
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -27,6 +27,8 @@ unit untASIOSvr;
           v1.1.0 2011-05-16
                   修正多次异步投递可能导致的数据乱序（多个文件同时下载，导致乱序的问题）
                   优化底层库提高效率
+           v1.1.1 2011-05-19
+                  感谢群友小饶的测试和客户端释放问题的反馈  ，已修正。
 ********************************************************************************}
 
 interface
@@ -529,9 +531,10 @@ begin
   if GetTickCount - FlastCheckDead > 5000 then begin
     FlastCheckDead := GetTickCount;
     for i := FDeadClients.Count - 1 downto 0 do begin
-      if (TAsioClient(FDeadClients.Objects[i]).SendRef = 0) and
-        (TAsioClient(FDeadClients.Objects[i]).isInCaseList = False) and
-        (TAsioClient(FDeadClients.Objects[i]).iscasing = false)
+      if (TAsioClient(FDeadClients.Objects[i]).SendRef = 0)
+//      and
+//        (TAsioClient(FDeadClients.Objects[i]).isInCaseList = False) and
+//        (TAsioClient(FDeadClients.Objects[i]).iscasing = false)
         and (GetTickCount - TAsioClient(FDeadClients.Objects[i]).DeadTime > 3000)
         then begin
         lbuff := TAsioClient(FDeadClients.Objects[i]);

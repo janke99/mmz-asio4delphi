@@ -1,0 +1,49 @@
+#------------------------------------------------------------------------------
+VERSION = BWS.01
+#------------------------------------------------------------------------------
+!ifndef ROOT
+ROOT = $(MAKEDIR)\..
+!endif
+#------------------------------------------------------------------------------
+MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
+DCC = $(ROOT)\bin\dcc32.exe $**
+BRCC = $(ROOT)\bin\brcc32.exe $**
+#------------------------------------------------------------------------------
+PROJECTS = ChatDemoSvr.exe ChatDemoClient.exe FileDemoSvr.exe \
+  FileDemoClient.exe ASIOTestClient.exe ASIOTESpro.exe Dbsvr.exe demoClient.exe \
+  unidac_Dbsvr.exe unidac_demoClient.exe
+#------------------------------------------------------------------------------
+default: $(PROJECTS)
+#------------------------------------------------------------------------------
+
+ChatDemoSvr.exe: 聊天示例程序\服务端\ChatDemoSvr.dpr
+  $(DCC)
+
+ChatDemoClient.exe: 聊天示例程序\客户端\ChatDemoClient.dpr
+  $(DCC)
+
+FileDemoSvr.exe: 文件传输示例程序\服务端\FileDemoSvr.dpr
+  $(DCC)
+
+FileDemoClient.exe: 文件传输示例程序\客户端\FileDemoClient.dpr
+  $(DCC)
+
+ASIOTestClient.exe: 性能测试程序\ASIO性能测试ASIO版本客户端\ASIOTestClient.dpr
+  $(DCC)
+
+ASIOTESpro.exe: 性能测试程序\ASIO性能测试服务端\ASIOTESpro.dpr
+  $(DCC)
+
+Dbsvr.exe: 远程数据库对象_ado_asio支持delphi全版本\服务端演示程序\Dbsvr.dpr
+  $(DCC)
+
+demoClient.exe: 远程数据库对象_ado_asio支持delphi全版本\客户端演示程序\demoClient.dpr
+  $(DCC)
+
+unidac_Dbsvr.exe: 远程数据库对象_uniDAC_ASIO版本\服务端演示程序\unidac_Dbsvr.dpr
+  $(DCC)
+
+unidac_demoClient.exe: 远程数据库对象_uniDAC_ASIO版本\客户端演示程序\unidac_demoClient.dpr
+  $(DCC)
+
+

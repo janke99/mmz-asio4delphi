@@ -369,6 +369,10 @@ DllExport int Asio_closesocket(session * isocket)
 	{
 	isocket->deadtime=GetTickCount();	
 	isocket->socket().cancel();
+	boost::system::error_code ignored_ec;  
+		isocket->socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+	isocket->socket().close();
+
 	}
 	catch(...)
 	{}
@@ -418,7 +422,8 @@ DllExport int Asio_Client_DisConn(session * isocket)
 		isocket->deadtime=GetTickCount();
 		isocket->socket().cancel();	
 		boost::system::error_code ignored_ec;  
-		isocket->socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);	
+		isocket->socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+		isocket->socket().close();
 	}
 	catch(...)
 	{
