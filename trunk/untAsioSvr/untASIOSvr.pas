@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.1.1
+        当前版本：v1.1.2
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -29,6 +29,8 @@ unit untASIOSvr;
                   优化底层库提高效率
            v1.1.1 2011-05-19
                   感谢群友小饶的测试和客户端释放问题的反馈  ，已修正。
+           v1.1.2 2011-05-23
+                  修正服务端退出后，客户端不能自动重连的BUG
 ********************************************************************************}
 
 interface
@@ -430,6 +432,7 @@ begin
     lcli.Guid := Lid;
     GIntAsioTCP.FClientLst.AddObject(lcli.Guid, lcli);
   end;
+  lcli.clientkind := 9;
   IUserData := Integer(lcli);
   if Assigned(GIntAsioTCP.FOnClientConn) then
     GIntAsioTCP.FOnClientConn(lcli);
@@ -503,6 +506,11 @@ begin
     Lci.Socketptr := 0;
     Lci.FisConning := False;
     if Lci.DeadTime > 0 then Exit;
+    if Lci.clientkind <> 9 then begin
+      if Assigned(GIntAsioTCP.FOnClientDisConn) then
+        GIntAsioTCP.FOnClientDisConn(Lci);
+      Exit;
+    end;
     GIntAsioTCP.Flock.Acquire;
     try
       Lci.DeadTime := GetTickCount;
@@ -535,7 +543,7 @@ begin
 //      and
 //        (TAsioClient(FDeadClients.Objects[i]).isInCaseList = False) and
 //        (TAsioClient(FDeadClients.Objects[i]).iscasing = false)
-        and (GetTickCount - TAsioClient(FDeadClients.Objects[i]).DeadTime > 3000)
+      and (GetTickCount - TAsioClient(FDeadClients.Objects[i]).DeadTime > 3000)
         then begin
         lbuff := TAsioClient(FDeadClients.Objects[i]);
         FDeadClients.Delete(i);

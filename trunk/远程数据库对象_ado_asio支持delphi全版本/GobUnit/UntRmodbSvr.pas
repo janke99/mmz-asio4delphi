@@ -125,8 +125,9 @@ begin
             except
               on e: Exception do begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                LSQl:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -151,8 +152,9 @@ begin
             except
               on e: Exception do begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                LSQl:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -189,8 +191,9 @@ begin
             except
               on e: Exception do begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -235,8 +238,9 @@ begin
             except
               on e: Exception do begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行Blob字段<%s>', [e.Message]);
               end;
