@@ -219,6 +219,8 @@ end;
 {$IFDEF dbpools}
 
 procedure DoansyExec(ibuff: Tdbpool);
+var
+  Lemsg: AnsiString;
 begin
   try
     case ibuff.IcmdKind of
@@ -231,8 +233,9 @@ begin
           except
             on e: Exception do begin
               ibuff.ISocker.Socket.WriteInteger(-1);
-              ibuff.ISocker.Socket.WriteInteger(Length(e.Message));
-              ibuff.ISocker.Socket.Write(e.Message);
+              Lemsg:=e.Message;
+              ibuff.ISocker.Socket.WriteInteger(Length(Lemsg));
+              ibuff.ISocker.Socket.Write(Lemsg);
               if ibuff.Shower <> nil then
                 ibuff.Shower.AddShow('客户端执行语句异常<%s><DBPoolID:%d>', [e.Message, ibuff.id]);
             end;
@@ -258,8 +261,9 @@ begin
           except
             on e: Exception do begin
               ibuff.ISocker.Socket.WriteInteger(-1);
-              ibuff.ISocker.Socket.WriteInteger(Length(e.Message));
-              ibuff.ISocker.Socket.Write(e.Message);
+              lemsg:=e.Message;
+              ibuff.ISocker.Socket.WriteInteger(Length(lemsg));
+              ibuff.ISocker.Socket.Write(lemsg);
               if ibuff.Shower <> nil then
                 ibuff.Shower.AddShow('客户端执行语句异常<%s><DBPoolID:%d>', [e.Message, ibuff.id]);
             end;
@@ -288,8 +292,9 @@ begin
             except
               on e: Exception do begin
                 ibuff.ISocker.Socket.WriteInteger(-1);
-                ibuff.ISocker.Socket.WriteInteger(Length(e.Message));
-                ibuff.ISocker.Socket.Write(e.Message);
+                lemsg:=e.Message;
+                ibuff.ISocker.Socket.WriteInteger(Length(lemsg));
+                ibuff.ISocker.Socket.Write(lemsg);
                 ibuff.FConner.Rollback;
                 if ibuff.Shower <> nil then
                   ibuff.Shower.AddShow('事务回滚，%s执行语句异常<%s>',
@@ -321,8 +326,9 @@ begin
           except
             on e: Exception do begin
               ibuff.ISocker.Socket.WriteInteger(-1);
-              ibuff.ISocker.Socket.WriteInteger(Length(e.Message));
-              ibuff.ISocker.Socket.Write(e.Message);
+              lemsg:=e.Message
+              ibuff.ISocker.Socket.WriteInteger(Length(lemsg));
+              ibuff.ISocker.Socket.Write(lemsg);
               if ibuff.Shower <> nil then
                 ibuff.Shower.AddShow('%s存储过程存取失败<%s>', [e.Message]);
             end;
@@ -462,8 +468,9 @@ begin
             on e: Exception do begin
                 // glBatchLst.SaveToFile('D:\1.txt');
               ClientThread.Socket.WriteInteger(-1);
-              ClientThread.Socket.WriteInteger(Length(e.Message));
-              ClientThread.Socket.Write(e.Message);
+              lsql:=e.Message;
+              ClientThread.Socket.WriteInteger(Length(lsql));
+              ClientThread.Socket.Write(lsql);
               if Shower <> nil then
                 Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
             end;
@@ -503,8 +510,9 @@ begin
           except
             on e: Exception do begin
               ClientThread.Socket.WriteInteger(-1);
-              ClientThread.Socket.WriteInteger(Length(e.Message));
-              ClientThread.Socket.Write(e.Message);
+              lsql:=e.Message;
+              ClientThread.Socket.WriteInteger(Length(lsql));
+              ClientThread.Socket.Write(lsql);
               if Shower <> nil then
                 Shower.AddShow('客户端执行Blob字段<%s>', [e.Message]);
             end;
@@ -642,8 +650,9 @@ begin
               on e: Exception do
               begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -697,8 +706,9 @@ begin
                 on e: Exception do
                 begin
                   ClientThread.Socket.WriteInteger(-1);
-                  ClientThread.Socket.WriteInteger(Length(e.Message));
-                  ClientThread.Socket.Write(e.Message);
+                  lsql:=e.Message;
+                  ClientThread.Socket.WriteInteger(Length(lsql));
+                  ClientThread.Socket.Write(lsql);
                   DataModel.Coner.Rollback;
                   if Shower <> nil then
                     Shower.AddShow('事务回滚，%s执行语句异常<%s>',
@@ -735,8 +745,9 @@ begin
               on e: Exception do
               begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('%s存储过程存取失败<%s>', [e.Message]);
               end;
@@ -782,8 +793,9 @@ begin
               begin
                 // glBatchLst.SaveToFile('D:\1.txt');
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(LSQl));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -814,8 +826,9 @@ begin
               on e: Exception do
               begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                LSQl:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行语句异常<%s>', [e.Message]);
               end;
@@ -868,8 +881,9 @@ begin
               on e: Exception do
               begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端执行Blob字段<%s>', [e.Message]);
               end;
@@ -918,8 +932,9 @@ begin
               on e: Exception do
               begin
                 ClientThread.Socket.WriteInteger(-1);
-                ClientThread.Socket.WriteInteger(Length(e.Message));
-                ClientThread.Socket.Write(e.Message);
+                lsql:=e.Message;
+                ClientThread.Socket.WriteInteger(Length(lsql));
+                ClientThread.Socket.Write(lsql);
                 if Shower <> nil then
                   Shower.AddShow('客户端获取ID异常<%s>', [e.Message]);
                 if e is EAccessViolation then
