@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.1.2
+        当前版本：v1.1.3
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -31,6 +31,8 @@ unit untASIOSvr;
                   感谢群友小饶的测试和客户端释放问题的反馈  ，已修正。
            v1.1.2 2011-05-23
                   修正服务端退出后，客户端不能自动重连的BUG
+           v1.1.3 2011-09-05
+                  修改由网友hexi 在盒子评论中指出的BUG
 ********************************************************************************}
 
 interface
@@ -488,7 +490,7 @@ begin
       finally
         Lci.RcvDataBuffer.FSendLock.Release;
       end;
-      if Assigned(GIntAsioTCP.FOnClientRecvData) then
+      if Assigned(GIntAsioTCP.FonClientSendData) then //20110905 修改由网友hexi 指出的BUG
         GIntAsioTCP.FonClientSendData(Lci, nil, TPoolItem(iuser2).FMem.Position);
     except
     end;
