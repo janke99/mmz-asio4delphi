@@ -72,14 +72,14 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
-			UseOfMFC="0"
+			UseOfMFC="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
@@ -89,10 +89,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libboost_system-vc71-mt-1_40.lib"
 				OutputFile="$(OutDir)/Svr_intf.dll"
 				LinkIncremental="1"
-				IgnoreDefaultLibraryNames=""
+				IgnoreDefaultLibraryNames="msvcrt.lib"
 				ModuleDefinitionFile=".\Svr_intf.def"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"

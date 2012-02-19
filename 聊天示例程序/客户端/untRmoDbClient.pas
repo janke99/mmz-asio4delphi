@@ -29,12 +29,12 @@ unit untRmoDbClient;
 interface
 
 uses
-  Classes, UntsocketDxBaseClient, IdComponent, Controls, ExtCtrls, db, dbclient, midaslib;
+  Classes, UntsocketDxBaseClient, Controls, ExtCtrls, db, dbclient, midaslib;
 
 type
   TConnthread = class;
 
-  TchatClient = class(TSocketClient)
+  TchatClient = class(TAsioClient)
   private
     gLmemStream: TMemoryStream;
     FCachSQllst, FsqlLst: TStrings; //用来记录已经打开了的数据集 以及对于的语句
@@ -143,7 +143,8 @@ begin
       ls := format('%s|%s', [Iacc, Str_Encry(iPsd, 'cht')]);
       Writeinteger(Length(ls));
       Write(ls);
-      if ReadInteger <> STCLogined then begin
+      i:=ReadInteger;
+      if i <> STCLogined then begin
         Result := False;
         DisConn;
         FisConning := False;

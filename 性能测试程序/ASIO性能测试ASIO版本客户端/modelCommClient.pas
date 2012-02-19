@@ -15,7 +15,7 @@ uses Classes, Forms, UntsocketDxBaseClient, ADODB, SyncObjs,
 type
   TWorkthread = class;
   //信令客户端对象
-  TCommClient = class(TSocketClient)
+  TCommClient = class(TAsioClient)
   private
     function DatasetToStream(iRecordset: TADOQuery; Stream: TMemoryStream): boolean;
 

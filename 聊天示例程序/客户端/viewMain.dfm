@@ -54,7 +54,7 @@ object view_Main: Tview_Main
     Left = 0
     Top = 49
     Width = 486
-    Height = 340
+    Height = 347
     Align = alClient
     ParentBackground = False
     TabOrder = 1
@@ -62,7 +62,7 @@ object view_Main: Tview_Main
       Left = 1
       Top = 1
       Width = 484
-      Height = 271
+      Height = 278
       Align = alClient
       Caption = 'Panel3'
       ParentBackground = False
@@ -71,7 +71,7 @@ object view_Main: Tview_Main
         Left = 328
         Top = 1
         Width = 155
-        Height = 269
+        Height = 276
         Align = alRight
         Caption = 'Panel5'
         ParentBackground = False
@@ -80,7 +80,7 @@ object view_Main: Tview_Main
           Left = 1
           Top = 1
           Width = 153
-          Height = 267
+          Height = 274
           Align = alClient
           ImeName = 'Chinese (Simplified) - US Keyboard'
           ItemHeight = 12
@@ -91,7 +91,7 @@ object view_Main: Tview_Main
         Left = 1
         Top = 1
         Width = 327
-        Height = 269
+        Height = 276
         Align = alClient
         ImeName = 'Chinese (Simplified) - US Keyboard'
         TabOrder = 1
@@ -99,7 +99,7 @@ object view_Main: Tview_Main
     end
     object Panel4: TPanel
       Left = 1
-      Top = 272
+      Top = 279
       Width = 484
       Height = 67
       Align = alBottom
