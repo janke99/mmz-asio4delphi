@@ -1,0 +1,14 @@
+EXPORTS
+    Asio_Client_Asreaddata @1
+    Asio_Client_DisConn @2
+    Asio_Client_Free @3
+    Asio_Client_conntosvr @4
+    Asio_Client_init @5
+    Asio_Client_readdata @6
+    Asio_Client_senddata @7
+    Asio_SetCallback @8
+    Asio_SvrRun @9
+    Asio_Uninit @10
+    Asio_closesocket @11
+    Asio_init @12
+    Asio_senddata @13

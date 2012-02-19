@@ -37,7 +37,7 @@ type
   public
     Sql: string;
   end;
-  TRmoClient = class(TSocketClient)
+  TRmoClient = class(TAsioClient)
   private
     gLmemStream: TMemoryStream;
     FCachSQllst, FsqlLst: TStrings; //用来记录已经打开了的数据集 以及对于的语句

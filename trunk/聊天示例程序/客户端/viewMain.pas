@@ -136,7 +136,7 @@ begin
   Lcrd := GetTickCount;
   if ListBox1.ItemIndex = -1 then begin
     Gob_RmoCtler.SaySome('', mmo_write.Text);
-    AddShow(Format('你对大家说:%s', [ListBox1.Items[ListBox1.itemindex], mmo_write.Text]));
+    AddShow(Format('你对大家说:%s', [mmo_write.Text]));
   end
   else begin
     Gob_RmoCtler.SaySome(ListBox1.Items[ListBox1.itemindex], mmo_write.Text);
