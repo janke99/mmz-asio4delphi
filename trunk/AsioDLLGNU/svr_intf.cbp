@@ -41,6 +41,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-static" />
 					<Add library="user32" />
 					<Add library="G:\home\boost_1_48_0\stage\lib\libboost_system-mgw45-mt-1_48.a" />
 					<Add library="WSOCK32" />
