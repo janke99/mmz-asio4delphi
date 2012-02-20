@@ -9,8 +9,10 @@ uses
 type
   Tview_Main = class(TForm)
     Memo1: TMemo;
+    btn1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure btn1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -23,7 +25,7 @@ var
 implementation
 
 uses
-  UntTIO;
+  UntTIO, untASIOSvr;
 
 {$R *.dfm}
 var
@@ -41,6 +43,11 @@ procedure Tview_Main.FormCloseQuery(Sender: TObject;
 begin
   Gob_Chatsvr.Free;
   Gio.Free;
+end;
+
+procedure Tview_Main.btn1Click(Sender: TObject);
+begin
+  TAsioClient(Gob_Chatsvr.Socket.FClientLst.Objects[0]).Socket.Disconnect;
 end;
 
 end.

@@ -3668,8 +3668,8 @@ begin
   lp.Port := Iport;
   lp.ipAddress := IIP;
   lp.UseUDP := false;
-  lp.UseBlocking:=true;
-  lp.UseNAGLE:=true;
+  lp.UseBlocking := true;
+  lp.UseNAGLE := true;
   Result := Connect(@lp);
 end;
 
@@ -4306,109 +4306,109 @@ function TDXSock.BlockWrite(buf: Pointer; len: Integer): Integer;
 
   {$IFDEF VER100}
 
-function TDXSock.BlockRead(buf: Pointer; len: Integer): Integer;
-{$ELSE}
+    function TDXSock.BlockRead(buf: Pointer; len: Integer): Integer;
+    {$ELSE}
 
-function TDXSock.Read(buf: Pointer; len: Integer): Integer;
-{$ENDIF}
-var
-  UDPAddrSize: Integer;
+      function TDXSock.Read(buf: Pointer; len: Integer): Integer;
+      {$ENDIF}
+      var
+        UDPAddrSize: Integer;
 //   Tries:Integer;
-{$IFDEF TLS_EDITION}
-  Filtered, InData: Pointer;
-  Handled: Boolean;
-  NewLen: Integer;
-  StartTime: Longword;
-  SizeToRead: Integer;
-{$ENDIF}
+      {$IFDEF TLS_EDITION}
+        Filtered, InData: Pointer;
+        Handled: Boolean;
+        NewLen: Integer;
+        StartTime: Longword;
+        SizeToRead: Integer;
+      {$ENDIF}
 
-begin
-{$IFDEF TLS_EDITION}
-  DoSleepEx(0);
-{$ENDIF}
-  fReadTimeout := False;
-  Result := 0;
-  if (Sock = INVALID_SOCKET) or (Len < 1) then
-    exit;
+      begin
+    {$IFDEF TLS_EDITION}
+        DoSleepEx(0);
+    {$ENDIF}
+        fReadTimeout := False;
+        Result := 0;
+        if (Sock = INVALID_SOCKET) or (Len < 1) then
+          exit;
 //   Tries:=0;
-  if fbIsUDP then begin
-    UDPAddrSize := ConstSizeofTSockAddrIn;
-    Result := UDPRecv(Sock, Buf^, Len, 0, SockAddr, UDPAddrSize, FErrStatus);
-    GlobalPeerPort := ntohs(SockAddr.sin_port);
-    GlobalPeerIPAddress := inet_ntoa(SockAddr.sin_addr);
-  end
-  else begin
-{$IFNDEF TLS_EDITION}
+        if fbIsUDP then begin
+          UDPAddrSize := ConstSizeofTSockAddrIn;
+          Result := UDPRecv(Sock, Buf^, Len, 0, SockAddr, UDPAddrSize, FErrStatus);
+          GlobalPeerPort := ntohs(SockAddr.sin_port);
+          GlobalPeerIPAddress := inet_ntoa(SockAddr.sin_addr);
+        end
+        else begin
+    {$IFNDEF TLS_EDITION}
 //      if (CountWaiting>0) or (Tries>=3) then begin
-    Result := BasicRecv(Sock, Buf^, Len, 0, FErrStatus);
-{$IFDEF CODE_TRACER}
-    if Assigned(CodeTracer) then begin
-      if (Result = -1) and ((fErrStatus = WSAETIMEDOUT) or (fErrStatus = WSAEWOULDBLOCK)) then {absorb}
-      else if Result > 0 then
-        CodeTracer.SendMessage(dxctDebug, 'TDXSock.Read RECV: ' + PChar(Buf) + ' [' + IntToStr(Result) + '] fes=' + IntToStr(FErrStatus))
-      else
-        CodeTracer.SendMessage(dxctDebug, 'TDXSock.Read RECV: [' + IntToStr(Result) + '] fes=' + IntToStr(FErrStatus));
-    end;
-{$ENDIF}
+          Result := BasicRecv(Sock, Buf^, Len, 0, FErrStatus);
+    {$IFDEF CODE_TRACER}
+          if Assigned(CodeTracer) then begin
+            if (Result = -1) and ((fErrStatus = WSAETIMEDOUT) or (fErrStatus = WSAEWOULDBLOCK)) then {absorb}
+            else if Result > 0 then
+              CodeTracer.SendMessage(dxctDebug, 'TDXSock.Read RECV: ' + PChar(Buf) + ' [' + IntToStr(Result) + '] fes=' + IntToStr(FErrStatus))
+            else
+              CodeTracer.SendMessage(dxctDebug, 'TDXSock.Read RECV: [' + IntToStr(Result) + '] fes=' + IntToStr(FErrStatus));
+          end;
+    {$ENDIF}
  //     end;
-{$ELSE}
+    {$ELSE}
 //      if (CountWaiting>0) or (Tries>=3) then begin
-    if Assigned(feOnFilter) then begin
-      SetBlocking(True);
-      SizeToRead := 0;
-      StartTime := DxString.TimeCounter + 120000;
-      while (SizeToRead = 0) and Connected and (not DXString.Timeout(StartTime)) do begin
-        ioctlsocket(Sock, FIONREAD, Longint(SizeToRead));
-        DoSleepEx(1);
-      end;
-      if SizeToRead <> 0 then begin
-        InData := nil;
-        Filtered := nil;
+          if Assigned(feOnFilter) then begin
+            SetBlocking(True);
+            SizeToRead := 0;
+            StartTime := DxString.TimeCounter + 120000;
+            while (SizeToRead = 0) and Connected and (not DXString.Timeout(StartTime)) do begin
+              ioctlsocket(Sock, FIONREAD, Longint(SizeToRead));
+              DoSleepEx(1);
+            end;
+            if SizeToRead <> 0 then begin
+              InData := nil;
+              Filtered := nil;
 //               GetMem (InData,SizeToRead) ;
-        InData := System.GetMemory(SizeToRead);
-        Result := Recv(Sock, InData^, SizeToRead, 0);
-      end;
-    end
-    else
-      Result := BasicRecv(Sock, Buf^, Len, 0, FErrStatus);
+              InData := System.GetMemory(SizeToRead);
+              Result := Recv(Sock, InData^, SizeToRead, 0);
+            end;
+          end
+          else
+            Result := BasicRecv(Sock, Buf^, Len, 0, FErrStatus);
 //      end;
-  end;
-  if Result = 0 then
-    CloseGracefully;
-  fReadTimeout := Result < 1;
-  if (Result > 0) and Assigned(feOnFilter) then begin
-    Handled := False;
-    Len := 0;
-    feOnFilter(ddAfterRead, InData, Filtered, SizeToRead, Len, Handled, FClientThread);
-    if not Handled then begin
-      fErrStatus := 9999; {onFilter failed!}
-      if InData <> nil then begin
+        end;
+        if Result = 0 then
+          CloseGracefully;
+        fReadTimeout := Result < 1;
+        if (Result > 0) and Assigned(feOnFilter) then begin
+          Handled := False;
+          Len := 0;
+          feOnFilter(ddAfterRead, InData, Filtered, SizeToRead, Len, Handled, FClientThread);
+          if not Handled then begin
+            fErrStatus := 9999; {onFilter failed!}
+            if InData <> nil then begin
 //            FreeMem (InData,SizeToRead) ;
-        System.FreeMemory(InData);
-        InData := nil;
-      end;
-      CloseGracefully;
-    end
-    else
-      Result := Len;
-    if Filtered = nil then
-      Result := 0;
-    if Filtered <> nil then
-      Move(Filtered^, Buf^, Len);
-    if InData <> nil then begin
+              System.FreeMemory(InData);
+              InData := nil;
+            end;
+            CloseGracefully;
+          end
+          else
+            Result := Len;
+          if Filtered = nil then
+            Result := 0;
+          if Filtered <> nil then
+            Move(Filtered^, Buf^, Len);
+          if InData <> nil then begin
 //         FreeMem (InData,SizeToRead) ;
-      System.FreeMemory(InData);
-      InData := nil;
-    end;
-    feOnFilter(ddFreePointer, nil, Filtered, Len, Len, Handled, FClientThread);
-  end;
-{$ENDIF}
-end;
-fReadTimeout := Result < 1;
-if Result = 0 then
-  CloseGracefully
-else if Result > 0 then
-  fTotalRBytes := fTotalRBytes + Result;
+            System.FreeMemory(InData);
+            InData := nil;
+          end;
+          feOnFilter(ddFreePointer, nil, Filtered, Len, Len, Handled, FClientThread);
+        end;
+    {$ENDIF}
+      end;
+      fReadTimeout := Result < 1;
+      if Result = 0 then
+        CloseGracefully
+      else if Result > 0 then
+        fTotalRBytes := fTotalRBytes + Result;
 end;
 
 function TDXSock.Read: Char;
@@ -4848,6 +4848,7 @@ var
 begin
   Result := -1;
   x := 0;
+  ltot := Count;
   while (ltot > 0) and Self.Connected do begin
     i := Read(PChar(iBuf) + x, ltot);
     Dec(ltot, i);
