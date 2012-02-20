@@ -19,8 +19,18 @@ object view_Main: Tview_Main
     Left = 0
     Top = 0
     Width = 472
-    Height = 382
+    Height = 389
     Align = alClient
+    ImeName = 'Chinese (Simplified) - US Keyboard'
     TabOrder = 0
+  end
+  object btn1: TButton
+    Left = 368
+    Top = 40
+    Width = 75
+    Height = 25
+    Caption = #26029#24320#36830#25509
+    TabOrder = 1
+    OnClick = btn1Click
   end
 end

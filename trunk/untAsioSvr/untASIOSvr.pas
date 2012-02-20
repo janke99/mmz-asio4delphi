@@ -4,7 +4,7 @@ unit untASIOSvr;
         创建日期：2011-04-07 17:26:15
         创建者	  马敏钊
         功能:     ASIO 完成端口服务器通用封装
-        当前版本：v1.1.3
+        当前版本：v1.2.0
         历史：
         v1.0.0 2011-04-07
                   创建本单元，对ASIO进行高效率的封装，
@@ -33,6 +33,12 @@ unit untASIOSvr;
                   修正服务端退出后，客户端不能自动重连的BUG
            v1.1.3 2011-09-05
                   修改由网友hexi 在盒子评论中指出的BUG
+           v1.2.0 2012-02-20
+                  重新通过gcc编译boost,从此告别附带的可恶的vs20xx运行时库(2个dll) : ) 
+                  重写客户端，移植dxsock到单个文件中
+                  解决服务端偶尔的异常问题
+                  解决客户端不能断开的问题
+
 ********************************************************************************}
 
 interface
@@ -900,6 +906,7 @@ begin
     TWorkThread(FThreadLst.Objects[i]).Resume;
   end;
   FmissonLst.Free;
+  FThreadLst.Free;
   Sleep(100);
   inherited;
 end;
